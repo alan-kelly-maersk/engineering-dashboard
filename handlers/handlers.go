@@ -12,6 +12,7 @@ import (
 	"github.com/maersk/engineering-dashboard/github"
 	"github.com/maersk/engineering-dashboard/gomod"
 	"github.com/maersk/engineering-dashboard/goproxy"
+	"github.com/maersk/engineering-dashboard/jira"
 	"github.com/maersk/engineering-dashboard/models"
 	"github.com/maersk/engineering-dashboard/sonarqube"
 )
@@ -21,11 +22,12 @@ type Handler struct {
 	proxyClient *goproxy.Client
 	gomodParser *gomod.Parser
 	sqClient    *sonarqube.Client
+	jiraClient  *jira.Client
 	config      *config.Config
 	templates   *template.Template
 }
 
-func NewHandler(ghClient *github.Client, sqClient *sonarqube.Client, cfg *config.Config, templatesDir string) (*Handler, error) {
+func NewHandler(ghClient *github.Client, sqClient *sonarqube.Client, jiraClient *jira.Client, cfg *config.Config, templatesDir string) (*Handler, error) {
 	tmpl, err := template.ParseGlob(filepath.Join(templatesDir, "*.html"))
 	if err != nil {
 		return nil, err
@@ -39,6 +41,7 @@ func NewHandler(ghClient *github.Client, sqClient *sonarqube.Client, cfg *config
 		proxyClient: proxyClient,
 		gomodParser: gomodParser,
 		sqClient:    sqClient,
+		jiraClient:  jiraClient,
 		config:      cfg,
 		templates:   tmpl,
 	}, nil
@@ -57,9 +60,16 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		Dependencies     models.DependencyMetrics
 		CodeQuality      models.CodeQualityMetrics
 		SonarQubeEnabled bool
+		JiraEnabled      bool
+		JiraBaseURL      string
 	}{
 		ActiveTab:        tab,
 		SonarQubeEnabled: h.sqClient != nil && h.sqClient.IsConfigured(),
+		JiraEnabled:      h.jiraClient != nil && h.jiraClient.IsConfigured(),
+	}
+
+	if data.JiraEnabled {
+		data.JiraBaseURL = h.jiraClient.GetBaseURL()
 	}
 
 	// Always fetch security metrics for the overview

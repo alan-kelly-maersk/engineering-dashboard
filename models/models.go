@@ -196,6 +196,42 @@ type FullDashboard struct {
 	Dependencies DependencyMetrics `json:"dependencies"`
 }
 
+// Jira Integration Models
+
+// ConcernType represents the type of concern that can generate a Jira ticket
+type ConcernType string
+
+const (
+	ConcernMissingSonarQube         ConcernType = "missing_sonarqube"
+	ConcernOutdatedGo               ConcernType = "outdated_go"
+	ConcernOutdatedDependencies     ConcernType = "outdated_dependencies"
+	ConcernDependabotAlerts         ConcernType = "dependabot_alerts"
+	ConcernCodeScanningAlerts       ConcernType = "code_scanning_alerts"
+	ConcernSecretScanningAlerts     ConcernType = "secret_scanning_alerts"
+	ConcernSonarQubeVulnerabilities ConcernType = "sonarqube_vulnerabilities"
+	ConcernQualityGateFailed        ConcernType = "quality_gate_failed"
+)
+
+// JiraTicketRequest represents a request to create a Jira ticket
+type JiraTicketRequest struct {
+	ConcernType ConcernType            `json:"concern_type"`
+	Repo        string                 `json:"repo"`
+	EpicKey     string                 `json:"epic_key"`
+	Details     map[string]interface{} `json:"details,omitempty"`
+}
+
+// JiraTicketResponse represents the response after creating a Jira ticket
+type JiraTicketResponse struct {
+	Key string `json:"key"`
+	URL string `json:"url"`
+}
+
+// JiraEpic represents a Jira epic for selection
+type JiraEpic struct {
+	Key     string `json:"key"`
+	Summary string `json:"summary"`
+}
+
 // SonarQube Code Quality Models
 
 // RepoCodeQualitySummary holds SonarQube metrics for a repository

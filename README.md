@@ -1,6 +1,6 @@
 # Engineering Dashboard
 
-A Go-based web dashboard that aggregates GitHub Security information, Go dependency status, and SonarQube code quality metrics across multiple repositories.
+A Go-based web dashboard that aggregates GitHub Security information, Go dependency status, and SonarQube code quality metrics across multiple repositories. Includes Jira integration to create tickets for identified concerns.
 
 ## Features
 
@@ -24,6 +24,22 @@ A Go-based web dashboard that aggregates GitHub Security information, Go depende
 - **Test Coverage**: Track code coverage percentages
 - **Code Duplication**: Monitor duplicated code percentages
 - **Ratings**: View reliability, security, and maintainability ratings (A-E)
+
+### Jira Integration
+- **Create Tickets**: Click the "Jira" button next to any concern to create a ticket
+- **Epic Selection**: Choose which epic to link the new story to
+- **Pre-populated Content**: Tickets are automatically filled with relevant details
+- **Direct Links**: Get a clickable link to the created ticket
+
+Supported concern types:
+- Missing SonarQube project
+- Outdated Go version
+- Outdated dependencies
+- Dependabot security alerts
+- Code scanning alerts
+- Secret scanning alerts
+- SonarQube vulnerabilities/security hotspots
+- Quality gate failures
 
 ## Requirements
 
@@ -66,7 +82,26 @@ A Go-based web dashboard that aggregates GitHub Security information, Go depende
 
    The Code Quality tab will only appear if both environment variables are set.
 
-3. **Run the server**
+4. **Set Jira/Atlassian credentials (optional)**
+
+   To enable the Jira integration for creating tickets:
+
+   ```bash
+   export ATLASSIAN_URL=https://your-company.atlassian.net
+   export ATLASSIAN_CLOUD_ID=your-cloud-id-uuid
+   export ATLASSIAN_EMAIL=your.email@company.com
+   export ATLASSIAN_API_TOKEN=your_api_token_here
+   export JIRA_PROJECT_KEY=PROJ
+   export JIRA_EPIC_LINK_FIELD=customfield_10002  # Optional, defaults to customfield_10002
+   ```
+
+   To find your Cloud ID, you can use the Atlassian API or check your Atlassian admin settings.
+   
+   To create an API token, visit: https://id.atlassian.com/manage-profile/security/api-tokens
+
+   The Jira buttons will only appear if all required environment variables are set.
+
+5. **Run the server**
 
    ```bash
    go run main.go
@@ -79,7 +114,7 @@ A Go-based web dashboard that aggregates GitHub Security information, Go depende
    ./engineering-dashboard
    ```
 
-4. **Open the dashboard**
+6. **Open the dashboard**
 
    Navigate to http://localhost:8080
 
@@ -104,6 +139,9 @@ Port precedence: `-port` flag > `PORT` env var > `8080` (default)
 | `GET /api/repo?owner=X&repo=Y` | JSON security data for a specific repository |
 | `GET /api/repo/dependencies?owner=X&repo=Y` | JSON dependency data for a specific repository |
 | `GET /api/repo/codequality?project=X` | JSON code quality data for a SonarQube project |
+| `GET /api/jira/enabled` | Check if Jira integration is configured |
+| `GET /api/jira/epics` | List open epics in the configured Jira project |
+| `POST /api/jira/ticket` | Create a Jira ticket for a concern |
 | `GET /health` | Health check endpoint |
 
 ## Environment Variables
@@ -114,6 +152,12 @@ Port precedence: `-port` flag > `PORT` env var > `8080` (default)
 | `PORT` | No | Server port (default: `8080`) |
 | `SONARQUBE_URL` | No | SonarQube server URL (e.g., `https://sonarqube.example.com`) |
 | `SONARQUBE_TOKEN` | No | SonarQube API token (generate from User > My Account > Security) |
+| `ATLASSIAN_URL` | No | Atlassian instance URL (e.g., `https://company.atlassian.net`) |
+| `ATLASSIAN_CLOUD_ID` | No | Atlassian Cloud ID (UUID) |
+| `ATLASSIAN_EMAIL` | No | Email address for Atlassian authentication |
+| `ATLASSIAN_API_TOKEN` | No | Atlassian API token |
+| `JIRA_PROJECT_KEY` | No | Jira project key for ticket creation |
+| `JIRA_EPIC_LINK_FIELD` | No | Custom field for epic link (default: `customfield_10002`) |
 
 ## Project Structure
 
@@ -132,8 +176,11 @@ engineering-dashboard/
 │   └── proxy.go         # Go module proxy client
 ├── sonarqube/
 │   └── client.go        # SonarQube API client
+├── jira/
+│   └── client.go        # Jira/Atlassian API client
 ├── handlers/
-│   └── handlers.go      # HTTP handlers
+│   ├── handlers.go      # HTTP handlers
+│   └── jira.go          # Jira API handlers
 ├── models/
 │   └── models.go        # Data models
 ├── templates/
@@ -165,6 +212,19 @@ For each repository with a configured SonarQube project:
 
 The SonarQube API uses token-based authentication (Basic Auth with token as username).
 
+### Jira Integration
+When creating a ticket:
+1. User clicks the "Jira" button next to a concern
+2. Dashboard fetches open epics from the configured Jira project via `/rest/api/3/search/jql`
+3. User selects an epic from the modal
+4. Dashboard creates a Story via `/rest/api/3/issue` with:
+   - Pre-populated summary based on the concern type
+   - Detailed description with relevant information and links
+   - Epic link to the selected epic
+5. User receives a link to the created ticket
+
+The Jira API uses Basic Auth with email and API token.
+
 ## Notes
 
 - The dashboard fetches data in real-time from GitHub's API and the Go module proxy
@@ -175,3 +235,6 @@ The SonarQube API uses token-based authentication (Basic Auth with token as user
 - Dependency checking uses concurrent requests with rate limiting (10 concurrent) to avoid overwhelming the proxy
 - The Code Quality tab only appears when `SONARQUBE_URL` and `SONARQUBE_TOKEN` are configured
 - If a repository's SonarQube project key differs from the repo name, specify it with `sonarqube_project` in repos.yaml
+- Jira buttons only appear when all Atlassian environment variables are configured
+- The Jira API token must have access to the configured project - regenerate the token if you recently gained project access
+- Tickets are created as Stories linked to the selected Epic using `customfield_10002` (configurable via `JIRA_EPIC_LINK_FIELD`)

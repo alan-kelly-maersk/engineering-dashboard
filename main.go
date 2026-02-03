@@ -10,6 +10,7 @@ import (
 	"github.com/maersk/engineering-dashboard/config"
 	"github.com/maersk/engineering-dashboard/github"
 	"github.com/maersk/engineering-dashboard/handlers"
+	"github.com/maersk/engineering-dashboard/jira"
 	"github.com/maersk/engineering-dashboard/sonarqube"
 )
 
@@ -56,8 +57,27 @@ func main() {
 		log.Printf("SonarQube integration disabled (set SONARQUBE_URL and SONARQUBE_TOKEN to enable)")
 	}
 
+	// Create Jira client (optional)
+	var jiraClient *jira.Client
+	jiraURL := os.Getenv("ATLASSIAN_URL")
+	jiraCloudID := os.Getenv("ATLASSIAN_CLOUD_ID")
+	jiraEmail := os.Getenv("ATLASSIAN_EMAIL")
+	jiraToken := os.Getenv("ATLASSIAN_API_TOKEN")
+	jiraProject := os.Getenv("JIRA_PROJECT_KEY")
+	jiraEpicField := os.Getenv("JIRA_EPIC_LINK_FIELD")
+	if jiraEpicField == "" {
+		jiraEpicField = "customfield_10002" // Default for classic Jira projects
+	}
+
+	if jiraURL != "" && jiraCloudID != "" && jiraEmail != "" && jiraToken != "" && jiraProject != "" {
+		jiraClient = jira.NewClient(jiraURL, jiraCloudID, jiraEmail, jiraToken, jiraProject, jiraEpicField)
+		log.Printf("Jira integration enabled (URL: %s, Cloud ID: %s, Project: %s)", jiraURL, jiraCloudID, jiraProject)
+	} else {
+		log.Printf("Jira integration disabled (set ATLASSIAN_URL, ATLASSIAN_CLOUD_ID, ATLASSIAN_EMAIL, ATLASSIAN_API_TOKEN, and JIRA_PROJECT_KEY to enable)")
+	}
+
 	// Create handler
-	handler, err := handlers.NewHandler(client, sqClient, cfg, *templatesDir)
+	handler, err := handlers.NewHandler(client, sqClient, jiraClient, cfg, *templatesDir)
 	if err != nil {
 		log.Fatalf("Failed to create handler: %v", err)
 	}
@@ -70,6 +90,9 @@ func main() {
 	http.HandleFunc("/api/repo/dependencies", handler.APIRepoDependencies)
 	http.HandleFunc("/api/codequality", handler.APICodeQuality)
 	http.HandleFunc("/api/repo/codequality", handler.APIRepoCodeQuality)
+	http.HandleFunc("/api/jira/enabled", handler.APIJiraEnabled)
+	http.HandleFunc("/api/jira/epics", handler.APIJiraEpics)
+	http.HandleFunc("/api/jira/ticket", handler.APIJiraCreateTicket)
 	http.HandleFunc("/health", handler.Health)
 
 	// Serve static files

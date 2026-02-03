@@ -494,6 +494,188 @@
             color: #f85149;
         }
 
+        /* Jira Integration Styles */
+        .jira-btn {
+            background: #0052cc;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: background 0.2s;
+        }
+
+        .jira-btn:hover {
+            background: #0065ff;
+        }
+
+        .jira-btn:disabled {
+            background: #30363d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .jira-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .jira-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .jira-modal-overlay.show {
+            display: flex;
+        }
+
+        .jira-modal {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .jira-modal h3 {
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .jira-modal-preview {
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .jira-modal-preview h4 {
+            font-size: 0.875rem;
+            color: #8b949e;
+            margin-bottom: 0.5rem;
+        }
+
+        .jira-modal-preview p {
+            font-size: 0.875rem;
+            color: #c9d1d9;
+        }
+
+        .jira-modal label {
+            display: block;
+            font-size: 0.875rem;
+            color: #8b949e;
+            margin-bottom: 0.5rem;
+        }
+
+        .jira-modal select {
+            width: 100%;
+            padding: 0.75rem;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .jira-modal select:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+
+        .jira-modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        .jira-modal-actions button {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+        }
+
+        .jira-modal-actions .btn-primary {
+            background: #0052cc;
+            color: white;
+        }
+
+        .jira-modal-actions .btn-primary:hover {
+            background: #0065ff;
+        }
+
+        .jira-modal-actions .btn-primary:disabled {
+            background: #30363d;
+            cursor: not-allowed;
+        }
+
+        .jira-modal-actions .btn-secondary {
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+        }
+
+        .jira-modal-actions .btn-secondary:hover {
+            background: #30363d;
+        }
+
+        .jira-toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #238636;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 1001;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .jira-toast.show {
+            display: flex;
+        }
+
+        .jira-toast.error {
+            background: #f85149;
+        }
+
+        .jira-toast a {
+            color: white;
+            text-decoration: underline;
+        }
+
+        .concern-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -651,8 +833,16 @@
                     {{if or .DependabotAlerts .CodeScanningAlerts .SecretScanningAlerts}}
                     <div class="alert-list">
                         {{if .DependabotAlerts}}
-                        <div class="collapsible-header" onclick="toggleCollapsible(this)">
-                            Dependabot Alerts ({{len .DependabotAlerts}})
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                                Dependabot Alerts ({{len .DependabotAlerts}})
+                            </div>
+                            {{if $.JiraEnabled}}
+                            <button class="jira-btn" onclick="openJiraModal('dependabot_alerts', '{{.FullName}}', {count: {{len .DependabotAlerts}}, alerts: 'See GitHub for details'}, 'Address {{len .DependabotAlerts}} Dependabot alerts in {{.FullName}}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                Jira
+                            </button>
+                            {{end}}
                         </div>
                         <div class="collapsible-content">
                             {{range .DependabotAlerts}}
@@ -668,8 +858,16 @@
                         {{end}}
 
                         {{if .CodeScanningAlerts}}
-                        <div class="collapsible-header" onclick="toggleCollapsible(this)">
-                            Code Scanning Alerts ({{len .CodeScanningAlerts}})
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                                Code Scanning Alerts ({{len .CodeScanningAlerts}})
+                            </div>
+                            {{if $.JiraEnabled}}
+                            <button class="jira-btn" onclick="openJiraModal('code_scanning_alerts', '{{.FullName}}', {count: {{len .CodeScanningAlerts}}, alerts: 'See GitHub for details'}, 'Fix {{len .CodeScanningAlerts}} code scanning issues in {{.FullName}}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                Jira
+                            </button>
+                            {{end}}
                         </div>
                         <div class="collapsible-content">
                             {{range .CodeScanningAlerts}}
@@ -685,8 +883,16 @@
                         {{end}}
 
                         {{if .SecretScanningAlerts}}
-                        <div class="collapsible-header" onclick="toggleCollapsible(this)">
-                            Secret Scanning Alerts ({{len .SecretScanningAlerts}})
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                                Secret Scanning Alerts ({{len .SecretScanningAlerts}})
+                            </div>
+                            {{if $.JiraEnabled}}
+                            <button class="jira-btn" onclick="openJiraModal('secret_scanning_alerts', '{{.FullName}}', {count: {{len .SecretScanningAlerts}}, alerts: 'See GitHub for details'}, 'Remediate {{len .SecretScanningAlerts}} exposed secrets in {{.FullName}}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                Jira
+                            </button>
+                            {{end}}
                         </div>
                         <div class="collapsible-content">
                             {{range .SecretScanningAlerts}}
@@ -775,24 +981,40 @@
                         {{if gt (len $repo.GoMods) 1}}
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                             <span class="module-path" style="font-size: 0.875rem; color: #58a6ff;">{{.FilePath}}</span>
-                            <span class="go-version {{if .GoVersionOutdated}}outdated{{else}}current{{end}}">
-                                Go {{.GoVersion}}
-                                {{if .GoVersionOutdated}}
-                                <span class="version-arrow">→</span> {{.LatestGoVersion}}
+                            <div class="concern-actions">
+                                <span class="go-version {{if .GoVersionOutdated}}outdated{{else}}current{{end}}">
+                                    Go {{.GoVersion}}
+                                    {{if .GoVersionOutdated}}
+                                    <span class="version-arrow">→</span> {{.LatestGoVersion}}
+                                    {{end}}
+                                </span>
+                                {{if and .GoVersionOutdated $.JiraEnabled}}
+                                <button class="jira-btn" onclick="openJiraModal('outdated_go', '{{$repo.FullName}}', {current_version: '{{.GoVersion}}', latest_version: '{{.LatestGoVersion}}', file_path: '{{.FilePath}}'}, 'Update Go from {{.GoVersion}} to {{.LatestGoVersion}} in {{$repo.FullName}}')">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                    Jira
+                                </button>
                                 {{end}}
-                            </span>
+                            </div>
                         </div>
                         {{else}}
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                             <div class="module-path">{{.ModulePath}}</div>
-                            {{if .GoVersion}}
-                            <span class="go-version {{if .GoVersionOutdated}}outdated{{else}}current{{end}}">
-                                Go {{.GoVersion}}
-                                {{if .GoVersionOutdated}}
-                                <span class="version-arrow">→</span> {{.LatestGoVersion}}
+                            <div class="concern-actions">
+                                {{if .GoVersion}}
+                                <span class="go-version {{if .GoVersionOutdated}}outdated{{else}}current{{end}}">
+                                    Go {{.GoVersion}}
+                                    {{if .GoVersionOutdated}}
+                                    <span class="version-arrow">→</span> {{.LatestGoVersion}}
+                                    {{end}}
+                                </span>
                                 {{end}}
-                            </span>
-                            {{end}}
+                                {{if and .GoVersionOutdated $.JiraEnabled}}
+                                <button class="jira-btn" onclick="openJiraModal('outdated_go', '{{$repo.FullName}}', {current_version: '{{.GoVersion}}', latest_version: '{{.LatestGoVersion}}', file_path: '{{.FilePath}}'}, 'Update Go from {{.GoVersion}} to {{.LatestGoVersion}} in {{$repo.FullName}}')">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                    Jira
+                                </button>
+                                {{end}}
+                            </div>
                         </div>
                         {{if ne .FilePath "go.mod"}}
                         <div class="module-path" style="font-size: 0.75rem; margin-bottom: 0.5rem;">📁 {{.FilePath}}</div>
@@ -816,8 +1038,16 @@
 
                         {{if .Dependencies}}
                         <div class="alert-list" style="margin-top: 0.75rem; padding-top: 0.75rem;">
-                            <div class="collapsible-header" onclick="toggleCollapsible(this)">
-                                Dependencies ({{.TotalDeps}})
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                                    Dependencies ({{.TotalDeps}}){{if gt .OutdatedDeps 0}} - <span style="color: #d29922;">{{.OutdatedDeps}} outdated</span>{{end}}
+                                </div>
+                                {{if and (gt .OutdatedDeps 0) $.JiraEnabled}}
+                                <button class="jira-btn" onclick="openJiraModal('outdated_dependencies', '{{$repo.FullName}}', {count: {{.OutdatedDeps}}, dependencies: 'See dashboard for details'}, 'Update {{.OutdatedDeps}} outdated dependencies in {{$repo.FullName}}')">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                    Jira
+                                </button>
+                                {{end}}
                             </div>
                             <div class="collapsible-content">
                                 <table class="dep-table">
@@ -941,7 +1171,15 @@
                     </div>
 
                     {{if $repo.Error}}
-                    <div class="error-message">{{$repo.Error}}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+                        <div class="error-message" style="flex: 1;">{{$repo.Error}}</div>
+                        {{if $.JiraEnabled}}
+                        <button class="jira-btn" style="margin-top: 0.5rem;" onclick="openJiraModal('missing_sonarqube', '{{$repo.FullName}}', {project_key: '{{$repo.SonarQubeProject}}'}, 'Add {{$repo.FullName}} to SonarQube')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                            Jira
+                        </button>
+                        {{end}}
+                    </div>
                     {{else}}
                     <div class="repo-stats">
                         <div class="stat-group">
@@ -1009,6 +1247,22 @@
                             </div>
                             {{end}}
                         </div>
+                        {{if $.JiraEnabled}}
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;">
+                            {{if or (gt $repo.Vulnerabilities 0) (gt $repo.SecurityHotspots 0)}}
+                            <button class="jira-btn" onclick="openJiraModal('sonarqube_vulnerabilities', '{{$repo.FullName}}', {vulnerabilities: {{$repo.Vulnerabilities}}, hotspots: {{$repo.SecurityHotspots}}, project_key: '{{$repo.SonarQubeProject}}'}, 'Fix {{$repo.Vulnerabilities}} vulnerabilities and {{$repo.SecurityHotspots}} security hotspots in {{$repo.FullName}}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                Create Ticket for Security Issues
+                            </button>
+                            {{end}}
+                            {{if and $repo.QualityGateStatus (ne $repo.QualityGateStatus "OK")}}
+                            <button class="jira-btn" onclick="openJiraModal('quality_gate_failed', '{{$repo.FullName}}', {project_key: '{{$repo.SonarQubeProject}}', conditions: 'Quality gate status: {{$repo.QualityGateStatus}}'}, 'Fix quality gate failure in {{$repo.FullName}}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                Create Ticket for Quality Gate
+                            </button>
+                            {{end}}
+                        </div>
+                        {{end}}
                     </div>
                     {{end}}
                 </div>
@@ -1018,12 +1272,155 @@
         {{end}}
     </div>
 
+    <!-- Jira Modal -->
+    {{if .JiraEnabled}}
+    <div id="jiraModal" class="jira-modal-overlay">
+        <div class="jira-modal">
+            <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="12" y1="18" x2="12" y2="12"/>
+                    <line x1="9" y1="15" x2="15" y2="15"/>
+                </svg>
+                Create Jira Ticket
+            </h3>
+            <div class="jira-modal-preview">
+                <h4>Summary</h4>
+                <p id="jiraTicketSummary">Loading...</p>
+            </div>
+            <label for="epicSelect">Select Epic</label>
+            <select id="epicSelect">
+                <option value="">Loading epics...</option>
+            </select>
+            <div class="jira-modal-actions">
+                <button class="btn-secondary" onclick="closeJiraModal()">Cancel</button>
+                <button class="btn-primary" id="createTicketBtn" onclick="createJiraTicket()">Create Ticket</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="jiraToast" class="jira-toast">
+        <span id="toastMessage">Ticket created!</span>
+    </div>
+    {{end}}
+
     <script>
         function toggleCollapsible(header) {
             header.classList.toggle('expanded');
             const content = header.nextElementSibling;
             content.classList.toggle('show');
         }
+
+        {{if .JiraEnabled}}
+        // Jira Integration
+        let currentConcern = null;
+        let epicsLoaded = false;
+
+        async function loadEpics() {
+            if (epicsLoaded) return;
+            
+            try {
+                const response = await fetch('/api/jira/epics');
+                if (!response.ok) throw new Error('Failed to load epics');
+                
+                const epics = await response.json();
+                const select = document.getElementById('epicSelect');
+                select.innerHTML = '<option value="">-- Select an Epic --</option>';
+                
+                epics.forEach(epic => {
+                    const option = document.createElement('option');
+                    option.value = epic.key;
+                    option.textContent = `${epic.key}: ${epic.summary}`;
+                    select.appendChild(option);
+                });
+                
+                epicsLoaded = true;
+            } catch (error) {
+                console.error('Error loading epics:', error);
+                document.getElementById('epicSelect').innerHTML = 
+                    '<option value="">Error loading epics</option>';
+            }
+        }
+
+        function openJiraModal(concernType, repo, details, summaryPreview) {
+            currentConcern = { concernType, repo, details };
+            document.getElementById('jiraTicketSummary').textContent = summaryPreview;
+            document.getElementById('jiraModal').classList.add('show');
+            document.getElementById('epicSelect').value = '';
+            loadEpics();
+        }
+
+        function closeJiraModal() {
+            document.getElementById('jiraModal').classList.remove('show');
+            currentConcern = null;
+        }
+
+        async function createJiraTicket() {
+            if (!currentConcern) return;
+            
+            const epicKey = document.getElementById('epicSelect').value;
+            if (!epicKey) {
+                showToast('Please select an epic', true);
+                return;
+            }
+
+            const btn = document.getElementById('createTicketBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+
+            try {
+                const response = await fetch('/api/jira/ticket', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        concern_type: currentConcern.concernType,
+                        repo: currentConcern.repo,
+                        epic_key: epicKey,
+                        details: currentConcern.details
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error);
+                }
+
+                const result = await response.json();
+                closeJiraModal();
+                showToast(`Created <a href="${result.url}" target="_blank">${result.key}</a>`);
+            } catch (error) {
+                console.error('Error creating ticket:', error);
+                showToast('Failed to create ticket: ' + error.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create Ticket';
+            }
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('jiraToast');
+            const messageEl = document.getElementById('toastMessage');
+            messageEl.innerHTML = message;
+            toast.classList.remove('error');
+            if (isError) toast.classList.add('error');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 5000);
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeJiraModal();
+        });
+
+        // Close modal on overlay click
+        document.getElementById('jiraModal').addEventListener('click', (e) => {
+            if (e.target.classList.contains('jira-modal-overlay')) {
+                closeJiraModal();
+            }
+        });
+        {{end}}
     </script>
 </body>
 </html>
