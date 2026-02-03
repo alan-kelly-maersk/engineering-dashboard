@@ -195,3 +195,42 @@ type FullDashboard struct {
 	Security     DashboardMetrics  `json:"security"`
 	Dependencies DependencyMetrics `json:"dependencies"`
 }
+
+// SonarQube Code Quality Models
+
+// RepoCodeQualitySummary holds SonarQube metrics for a repository
+type RepoCodeQualitySummary struct {
+	Owner            string `json:"owner"`
+	Repo             string `json:"repo"`
+	FullName         string `json:"full_name"`
+	SonarQubeProject string `json:"sonarqube_project"`
+	// Metrics from SonarQube
+	Bugs                  int     `json:"bugs"`
+	Vulnerabilities       int     `json:"vulnerabilities"`
+	CodeSmells            int     `json:"code_smells"`
+	SecurityHotspots      int     `json:"security_hotspots"`
+	Coverage              float64 `json:"coverage"`
+	DuplicatedLines       float64 `json:"duplicated_lines_density"`
+	LinesOfCode           int     `json:"lines_of_code"`
+	ReliabilityRating     string  `json:"reliability_rating"`
+	SecurityRating        string  `json:"security_rating"`
+	MaintainabilityRating string  `json:"maintainability_rating"`
+	QualityGateStatus     string  `json:"quality_gate_status"`
+	LastAnalysis          string  `json:"last_analysis"`
+	Error                 string  `json:"error,omitempty"`
+}
+
+// CodeQualityMetrics holds aggregated code quality metrics
+type CodeQualityMetrics struct {
+	TotalRepos            int                      `json:"total_repos"`
+	ConfiguredRepos       int                      `json:"configured_repos"` // Repos with SonarQube configured
+	AnalyzedRepos         int                      `json:"analyzed_repos"`   // Repos successfully analyzed
+	TotalBugs             int                      `json:"total_bugs"`
+	TotalVulnerabilities  int                      `json:"total_vulnerabilities"`
+	TotalCodeSmells       int                      `json:"total_code_smells"`
+	TotalSecurityHotspots int                      `json:"total_security_hotspots"`
+	QualityGatePassed     int                      `json:"quality_gate_passed"`
+	QualityGateFailed     int                      `json:"quality_gate_failed"`
+	AverageCoverage       float64                  `json:"average_coverage"`
+	Repositories          []RepoCodeQualitySummary `json:"repositories"`
+}

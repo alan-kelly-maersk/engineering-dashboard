@@ -13,17 +13,19 @@ import (
 	"github.com/maersk/engineering-dashboard/gomod"
 	"github.com/maersk/engineering-dashboard/goproxy"
 	"github.com/maersk/engineering-dashboard/models"
+	"github.com/maersk/engineering-dashboard/sonarqube"
 )
 
 type Handler struct {
 	ghClient    *github.Client
 	proxyClient *goproxy.Client
 	gomodParser *gomod.Parser
+	sqClient    *sonarqube.Client
 	config      *config.Config
 	templates   *template.Template
 }
 
-func NewHandler(ghClient *github.Client, cfg *config.Config, templatesDir string) (*Handler, error) {
+func NewHandler(ghClient *github.Client, sqClient *sonarqube.Client, cfg *config.Config, templatesDir string) (*Handler, error) {
 	tmpl, err := template.ParseGlob(filepath.Join(templatesDir, "*.html"))
 	if err != nil {
 		return nil, err
@@ -36,6 +38,7 @@ func NewHandler(ghClient *github.Client, cfg *config.Config, templatesDir string
 		ghClient:    ghClient,
 		proxyClient: proxyClient,
 		gomodParser: gomodParser,
+		sqClient:    sqClient,
 		config:      cfg,
 		templates:   tmpl,
 	}, nil
@@ -49,11 +52,14 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		ActiveTab    string
-		Security     models.DashboardMetrics
-		Dependencies models.DependencyMetrics
+		ActiveTab        string
+		Security         models.DashboardMetrics
+		Dependencies     models.DependencyMetrics
+		CodeQuality      models.CodeQualityMetrics
+		SonarQubeEnabled bool
 	}{
-		ActiveTab: tab,
+		ActiveTab:        tab,
+		SonarQubeEnabled: h.sqClient != nil && h.sqClient.IsConfigured(),
 	}
 
 	// Always fetch security metrics for the overview
@@ -62,6 +68,11 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	// Fetch dependencies if on that tab
 	if tab == "dependencies" {
 		data.Dependencies = h.GetDependencyMetrics()
+	}
+
+	// Fetch code quality if on that tab and SonarQube is configured
+	if tab == "codequality" && data.SonarQubeEnabled {
+		data.CodeQuality = h.GetCodeQualityMetrics()
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "dashboard.html", data); err != nil {
@@ -234,4 +245,131 @@ func (h *Handler) APIRepoDependencies(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"status":"ok"}`))
+}
+
+// GetCodeQualityMetrics fetches SonarQube metrics for all repositories
+func (h *Handler) GetCodeQualityMetrics() models.CodeQualityMetrics {
+	metrics := models.CodeQualityMetrics{
+		TotalRepos:   len(h.config.Repositories),
+		Repositories: make([]models.RepoCodeQualitySummary, len(h.config.Repositories)),
+	}
+
+	if h.sqClient == nil || !h.sqClient.IsConfigured() {
+		return metrics
+	}
+
+	var wg sync.WaitGroup
+	var coverageSum float64
+	var coverageCount int
+	var mu sync.Mutex
+
+	for i, repo := range h.config.Repositories {
+		wg.Add(1)
+		go func(idx int, r config.Repository) {
+			defer wg.Done()
+
+			summary := models.RepoCodeQualitySummary{
+				Owner:            r.Owner,
+				Repo:             r.Repo,
+				FullName:         fmt.Sprintf("%s/%s", r.Owner, r.Repo),
+				SonarQubeProject: r.SonarQubeProjectKey(),
+			}
+
+			// Fetch metrics from SonarQube
+			sqMetrics := h.sqClient.GetProjectMetrics(summary.SonarQubeProject)
+
+			summary.Bugs = sqMetrics.Bugs
+			summary.Vulnerabilities = sqMetrics.Vulnerabilities
+			summary.CodeSmells = sqMetrics.CodeSmells
+			summary.SecurityHotspots = sqMetrics.SecurityHotspots
+			summary.Coverage = sqMetrics.Coverage
+			summary.DuplicatedLines = sqMetrics.DuplicatedLines
+			summary.LinesOfCode = sqMetrics.LinesOfCode
+			summary.ReliabilityRating = sqMetrics.ReliabilityRating
+			summary.SecurityRating = sqMetrics.SecurityRating
+			summary.MaintainabilityRating = sqMetrics.MaintainabilityRating
+			summary.QualityGateStatus = sqMetrics.QualityGateStatus
+			summary.LastAnalysis = sqMetrics.LastAnalysis
+			summary.Error = sqMetrics.Error
+
+			metrics.Repositories[idx] = summary
+
+			// Aggregate metrics (thread-safe)
+			mu.Lock()
+			if sqMetrics.Error == "" {
+				metrics.AnalyzedRepos++
+				metrics.TotalBugs += sqMetrics.Bugs
+				metrics.TotalVulnerabilities += sqMetrics.Vulnerabilities
+				metrics.TotalCodeSmells += sqMetrics.CodeSmells
+				metrics.TotalSecurityHotspots += sqMetrics.SecurityHotspots
+
+				if sqMetrics.QualityGateStatus == "OK" {
+					metrics.QualityGatePassed++
+				} else if sqMetrics.QualityGateStatus != "" {
+					metrics.QualityGateFailed++
+				}
+
+				if sqMetrics.Coverage > 0 {
+					coverageSum += sqMetrics.Coverage
+					coverageCount++
+				}
+			}
+			mu.Unlock()
+		}(i, repo)
+	}
+	wg.Wait()
+
+	// Calculate average coverage
+	if coverageCount > 0 {
+		metrics.AverageCoverage = coverageSum / float64(coverageCount)
+	}
+
+	metrics.ConfiguredRepos = metrics.TotalRepos
+
+	return metrics
+}
+
+// APICodeQuality returns code quality metrics as JSON
+func (h *Handler) APICodeQuality(w http.ResponseWriter, r *http.Request) {
+	if h.sqClient == nil || !h.sqClient.IsConfigured() {
+		http.Error(w, "SonarQube not configured", http.StatusServiceUnavailable)
+		return
+	}
+
+	metrics := h.GetCodeQualityMetrics()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(metrics)
+}
+
+// APIRepoCodeQuality returns code quality metrics for a specific repository
+func (h *Handler) APIRepoCodeQuality(w http.ResponseWriter, r *http.Request) {
+	if h.sqClient == nil || !h.sqClient.IsConfigured() {
+		http.Error(w, "SonarQube not configured", http.StatusServiceUnavailable)
+		return
+	}
+
+	projectKey := r.URL.Query().Get("project")
+	if projectKey == "" {
+		// Try to get from owner/repo params
+		owner := r.URL.Query().Get("owner")
+		repo := r.URL.Query().Get("repo")
+		if repo == "" {
+			http.Error(w, "project or repo query parameter is required", http.StatusBadRequest)
+			return
+		}
+		// Find the repo config to get the correct project key
+		for _, repoConfig := range h.config.Repositories {
+			if repoConfig.Owner == owner && repoConfig.Repo == repo {
+				projectKey = repoConfig.SonarQubeProjectKey()
+				break
+			}
+		}
+		if projectKey == "" {
+			projectKey = repo
+		}
+	}
+
+	metrics := h.sqClient.GetProjectMetrics(projectKey)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(metrics)
 }

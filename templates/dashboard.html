@@ -457,6 +457,43 @@
             60%, 100% { content: '...'; }
         }
 
+        /* SonarQube Rating Badges */
+        .rating-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .rating-badge.rating-A {
+            background: #3fb95033;
+            color: #3fb950;
+        }
+
+        .rating-badge.rating-B {
+            background: #a3e63533;
+            color: #a3e635;
+        }
+
+        .rating-badge.rating-C {
+            background: #d2992233;
+            color: #d29922;
+        }
+
+        .rating-badge.rating-D {
+            background: #db6d2833;
+            color: #db6d28;
+        }
+
+        .rating-badge.rating-E {
+            background: #f8514933;
+            color: #f85149;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -515,6 +552,20 @@
                     {{end}}
                 {{end}}
             </a>
+            {{if .SonarQubeEnabled}}
+            <a href="/?tab=codequality" class="tab {{if eq .ActiveTab "codequality"}}active{{end}}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                Code Quality
+                {{if eq .ActiveTab "codequality"}}
+                    {{if gt .CodeQuality.TotalBugs 0}}
+                    <span class="tab-badge warning">{{.CodeQuality.TotalBugs}} bugs</span>
+                    {{end}}
+                {{end}}
+            </a>
+            {{end}}
         </nav>
 
         {{if eq .ActiveTab "security"}}
@@ -813,6 +864,152 @@
                         {{end}}
                     </div>
                     {{end}}
+                    {{end}}
+                </div>
+                {{end}}
+            </div>
+        </section>
+
+        {{else if eq .ActiveTab "codequality"}}
+        <!-- Code Quality Tab -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <h3>Analyzed Projects</h3>
+                <div class="metric-value neutral">{{.CodeQuality.AnalyzedRepos}} / {{.CodeQuality.TotalRepos}}</div>
+                <div style="font-size: 0.75rem; color: #8b949e; margin-top: 0.5rem;">in SonarQube</div>
+            </div>
+            <div class="metric-card">
+                <h3>Quality Gate</h3>
+                <div style="display: flex; gap: 1rem; align-items: baseline;">
+                    <div>
+                        <div class="metric-value low" style="font-size: 1.75rem;">{{.CodeQuality.QualityGatePassed}}</div>
+                        <div style="font-size: 0.75rem; color: #3fb950;">passed</div>
+                    </div>
+                    <div>
+                        <div class="metric-value {{if gt .CodeQuality.QualityGateFailed 0}}danger{{else}}low{{end}}" style="font-size: 1.75rem;">{{.CodeQuality.QualityGateFailed}}</div>
+                        <div style="font-size: 0.75rem; color: {{if gt .CodeQuality.QualityGateFailed 0}}#f85149{{else}}#8b949e{{end}};">failed</div>
+                    </div>
+                </div>
+            </div>
+            <div class="metric-card">
+                <h3>Bugs</h3>
+                <div class="metric-value {{if gt .CodeQuality.TotalBugs 0}}warning{{else}}low{{end}}">{{.CodeQuality.TotalBugs}}</div>
+            </div>
+            <div class="metric-card">
+                <h3>Vulnerabilities</h3>
+                <div class="metric-value {{if gt .CodeQuality.TotalVulnerabilities 0}}danger{{else}}low{{end}}">{{.CodeQuality.TotalVulnerabilities}}</div>
+            </div>
+            <div class="metric-card">
+                <h3>Code Smells</h3>
+                <div class="metric-value {{if gt .CodeQuality.TotalCodeSmells 100}}warning{{else if gt .CodeQuality.TotalCodeSmells 0}}medium{{else}}low{{end}}">{{.CodeQuality.TotalCodeSmells}}</div>
+            </div>
+            <div class="metric-card">
+                <h3>Security Hotspots</h3>
+                <div class="metric-value {{if gt .CodeQuality.TotalSecurityHotspots 0}}warning{{else}}low{{end}}">{{.CodeQuality.TotalSecurityHotspots}}</div>
+            </div>
+            <div class="metric-card">
+                <h3>Avg. Coverage</h3>
+                <div class="metric-value {{if lt .CodeQuality.AverageCoverage 50.0}}danger{{else if lt .CodeQuality.AverageCoverage 80.0}}warning{{else}}low{{end}}" style="font-size: 1.75rem;">
+                    {{printf "%.1f" .CodeQuality.AverageCoverage}}%
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="section-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                SonarQube Projects
+            </h2>
+            <div class="repo-grid">
+                {{range $repo := .CodeQuality.Repositories}}
+                <div class="repo-card {{if $repo.Error}}has-error{{end}}">
+                    <div class="repo-header">
+                        <a href="https://github.com/{{$repo.FullName}}" target="_blank" class="repo-name">{{$repo.FullName}}</a>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            {{if $repo.QualityGateStatus}}
+                            <span class="dep-badge {{if eq $repo.QualityGateStatus "OK"}}uptodate{{else}}error{{end}}">
+                                {{if eq $repo.QualityGateStatus "OK"}}Passed{{else}}Failed{{end}}
+                            </span>
+                            {{end}}
+                            {{if ne $repo.SonarQubeProject $repo.Repo}}
+                            <span class="dep-badge indirect" title="SonarQube project key">{{$repo.SonarQubeProject}}</span>
+                            {{end}}
+                        </div>
+                    </div>
+
+                    {{if $repo.Error}}
+                    <div class="error-message">{{$repo.Error}}</div>
+                    {{else}}
+                    <div class="repo-stats">
+                        <div class="stat-group">
+                            <span class="stat-label">Bugs</span>
+                            <span class="stat-value {{if eq $repo.Bugs 0}}zero{{else if gt $repo.Bugs 5}}danger{{else}}warning{{end}}" style="font-size: 1rem;">
+                                {{$repo.Bugs}}
+                            </span>
+                        </div>
+                        <div class="stat-group">
+                            <span class="stat-label">Vulnerabilities</span>
+                            <span class="stat-value {{if eq $repo.Vulnerabilities 0}}zero{{else}}danger{{end}}" style="font-size: 1rem;">
+                                {{$repo.Vulnerabilities}}
+                            </span>
+                        </div>
+                        <div class="stat-group">
+                            <span class="stat-label">Code Smells</span>
+                            <span class="stat-value {{if eq $repo.CodeSmells 0}}zero{{else if gt $repo.CodeSmells 50}}warning{{else}}neutral{{end}}" style="font-size: 1rem;">
+                                {{$repo.CodeSmells}}
+                            </span>
+                        </div>
+                        <div class="stat-group">
+                            <span class="stat-label">Hotspots</span>
+                            <span class="stat-value {{if eq $repo.SecurityHotspots 0}}zero{{else}}warning{{end}}" style="font-size: 1rem;">
+                                {{$repo.SecurityHotspots}}
+                            </span>
+                        </div>
+                        <div class="stat-group">
+                            <span class="stat-label">Coverage</span>
+                            <span class="stat-value {{if lt $repo.Coverage 50.0}}danger{{else if lt $repo.Coverage 80.0}}warning{{else}}zero{{end}}" style="font-size: 1rem;">
+                                {{printf "%.1f" $repo.Coverage}}%
+                            </span>
+                        </div>
+                        <div class="stat-group">
+                            <span class="stat-label">Duplication</span>
+                            <span class="stat-value {{if gt $repo.DuplicatedLines 10.0}}warning{{else}}zero{{end}}" style="font-size: 1rem;">
+                                {{printf "%.1f" $repo.DuplicatedLines}}%
+                            </span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #30363d;">
+                        <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-size: 0.75rem; color: #8b949e;">Reliability</span>
+                                <span class="rating-badge rating-{{$repo.ReliabilityRating}}">{{$repo.ReliabilityRating}}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-size: 0.75rem; color: #8b949e;">Security</span>
+                                <span class="rating-badge rating-{{$repo.SecurityRating}}">{{$repo.SecurityRating}}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-size: 0.75rem; color: #8b949e;">Maintainability</span>
+                                <span class="rating-badge rating-{{$repo.MaintainabilityRating}}">{{$repo.MaintainabilityRating}}</span>
+                            </div>
+                            {{if $repo.LinesOfCode}}
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-size: 0.75rem; color: #8b949e;">Lines of Code</span>
+                                <span style="font-size: 0.875rem; color: #c9d1d9;">{{$repo.LinesOfCode}}</span>
+                            </div>
+                            {{end}}
+                            {{if $repo.LastAnalysis}}
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
+                                <span style="font-size: 0.75rem; color: #8b949e;">Last Analysis</span>
+                                <span style="font-size: 0.75rem; color: #8b949e;">{{$repo.LastAnalysis}}</span>
+                            </div>
+                            {{end}}
+                        </div>
+                    </div>
                     {{end}}
                 </div>
                 {{end}}

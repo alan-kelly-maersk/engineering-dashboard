@@ -1,6 +1,6 @@
 # Engineering Dashboard
 
-A Go-based web dashboard that aggregates GitHub Security information and Go dependency status across multiple repositories.
+A Go-based web dashboard that aggregates GitHub Security information, Go dependency status, and SonarQube code quality metrics across multiple repositories.
 
 ## Features
 
@@ -15,6 +15,15 @@ A Go-based web dashboard that aggregates GitHub Security information and Go depe
 - **Dependency Analysis**: Check all go.mod dependencies against the Go module proxy
 - **Update Detection**: Identify which dependencies have newer versions available
 - **Direct vs Indirect**: Distinguish between direct and indirect dependencies
+
+### Code Quality Tab (SonarQube)
+- **Quality Gate Status**: See which projects pass or fail the quality gate
+- **Bugs & Vulnerabilities**: Track code bugs and security vulnerabilities
+- **Code Smells**: Monitor maintainability issues
+- **Security Hotspots**: Review security-sensitive code that needs manual review
+- **Test Coverage**: Track code coverage percentages
+- **Code Duplication**: Monitor duplicated code percentages
+- **Ratings**: View reliability, security, and maintainability ratings (A-E)
 
 ## Requirements
 
@@ -35,13 +44,27 @@ A Go-based web dashboard that aggregates GitHub Security information and Go depe
        repo: repo-1
      - owner: your-org
        repo: repo-2
+       sonarqube_project: custom-project-key  # Optional: defaults to repo name
    ```
+
+   The `sonarqube_project` field is optional. If not specified, the repo name is used as the SonarQube project key.
 
 2. **Set your GitHub token**
 
    ```bash
    export GITHUB_TOKEN=ghp_your_token_here
    ```
+
+3. **Set SonarQube credentials (optional)**
+
+   To enable the Code Quality tab, set your SonarQube URL and API token:
+
+   ```bash
+   export SONARQUBE_URL=https://sonarqube.example.com
+   export SONARQUBE_TOKEN=squ_your_token_here
+   ```
+
+   The Code Quality tab will only appear if both environment variables are set.
 
 3. **Run the server**
 
@@ -64,19 +87,23 @@ A Go-based web dashboard that aggregates GitHub Security information and Go depe
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `-port` | `8080` | Server port |
+| `-port` | (see below) | Server port (overrides `PORT` env var) |
 | `-config` | `repos.yaml` | Path to repositories config file |
 | `-templates` | `templates` | Path to templates directory |
+
+Port precedence: `-port` flag > `PORT` env var > `8080` (default)
 
 ## API Endpoints
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /` | Dashboard HTML view (use `?tab=engineering` or `?tab=dependencies`) |
-| `GET /api/metrics` | JSON engineering metrics for all configured repositories |
+| `GET /` | Dashboard HTML view (use `?tab=security`, `?tab=dependencies`, or `?tab=codequality`) |
+| `GET /api/metrics` | JSON security metrics for all configured repositories |
 | `GET /api/dependencies` | JSON dependency metrics for all configured repositories |
-| `GET /api/repo?owner=X&repo=Y` | JSON engineering data for a specific repository |
+| `GET /api/codequality` | JSON code quality metrics from SonarQube |
+| `GET /api/repo?owner=X&repo=Y` | JSON security data for a specific repository |
 | `GET /api/repo/dependencies?owner=X&repo=Y` | JSON dependency data for a specific repository |
+| `GET /api/repo/codequality?project=X` | JSON code quality data for a SonarQube project |
 | `GET /health` | Health check endpoint |
 
 ## Environment Variables
@@ -84,6 +111,9 @@ A Go-based web dashboard that aggregates GitHub Security information and Go depe
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `GITHUB_TOKEN` | Yes | GitHub Personal Access Token |
+| `PORT` | No | Server port (default: `8080`) |
+| `SONARQUBE_URL` | No | SonarQube server URL (e.g., `https://sonarqube.example.com`) |
+| `SONARQUBE_TOKEN` | No | SonarQube API token (generate from User > My Account > Security) |
 
 ## Project Structure
 
@@ -100,6 +130,8 @@ engineering-dashboard/
 │   └── parser.go        # go.mod file parser
 ├── goproxy/
 │   └── proxy.go         # Go module proxy client
+├── sonarqube/
+│   └── client.go        # SonarQube API client
 ├── handlers/
 │   └── handlers.go      # HTTP handlers
 ├── models/
@@ -125,6 +157,14 @@ For each repository:
 4. Fetches the latest stable Go version from `go.dev/dl/?mode=json`
 5. Compares versions to identify outdated packages
 
+### Code Quality Analysis (SonarQube)
+For each repository with a configured SonarQube project:
+1. Fetches project measures via `/api/measures/component` (bugs, vulnerabilities, code smells, coverage, etc.)
+2. Fetches quality gate status via `/api/qualitygates/project_status`
+3. Fetches last analysis date via `/api/project_analyses/search`
+
+The SonarQube API uses token-based authentication (Basic Auth with token as username).
+
 ## Notes
 
 - The dashboard fetches data in real-time from GitHub's API and the Go module proxy
@@ -133,3 +173,5 @@ For each repository:
 - Some security features require GitHub Advanced Security to be enabled on repositories
 - Private Go modules won't have version info from the public proxy (shown as "N/A")
 - Dependency checking uses concurrent requests with rate limiting (10 concurrent) to avoid overwhelming the proxy
+- The Code Quality tab only appears when `SONARQUBE_URL` and `SONARQUBE_TOKEN` are configured
+- If a repository's SonarQube project key differs from the repo name, specify it with `sonarqube_project` in repos.yaml

@@ -8,12 +8,21 @@ import (
 )
 
 type Repository struct {
-	Owner string `yaml:"owner"`
-	Repo  string `yaml:"repo"`
+	Owner            string `yaml:"owner"`
+	Repo             string `yaml:"repo"`
+	SonarQubeProject string `yaml:"sonarqube_project,omitempty"` // Optional: defaults to repo name if not specified
 }
 
 type Config struct {
 	Repositories []Repository `yaml:"repositories"`
+}
+
+// SonarQubeProjectKey returns the SonarQube project key, defaulting to repo name if not specified
+func (r Repository) SonarQubeProjectKey() string {
+	if r.SonarQubeProject != "" {
+		return r.SonarQubeProject
+	}
+	return r.Repo
 }
 
 func Load(path string) (*Config, error) {
