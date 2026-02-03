@@ -1309,7 +1309,12 @@
     <script>
         function toggleCollapsible(header) {
             header.classList.toggle('expanded');
-            const content = header.nextElementSibling;
+            // Check if the next sibling is the content, otherwise look at parent's sibling
+            // (handles case where header is wrapped in a flex container for Jira button)
+            let content = header.nextElementSibling;
+            if (!content || !content.classList.contains('collapsible-content')) {
+                content = header.parentElement.nextElementSibling;
+            }
             content.classList.toggle('show');
         }
 
