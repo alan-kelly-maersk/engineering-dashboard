@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maersk/security-dashboard/config"
-	"github.com/maersk/security-dashboard/models"
+	"github.com/maersk/engineering-dashboard/config"
+	"github.com/maersk/engineering-dashboard/models"
 )
 
 const (

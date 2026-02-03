@@ -52,8 +52,8 @@ A Go-based web dashboard that aggregates GitHub Security information and Go depe
    Or build and run:
 
    ```bash
-   go build -o security-dashboard
-   ./security-dashboard
+   go build -o engineering-dashboard
+   ./engineering-dashboard
    ```
 
 4. **Open the dashboard**
@@ -72,10 +72,10 @@ A Go-based web dashboard that aggregates GitHub Security information and Go depe
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /` | Dashboard HTML view (use `?tab=security` or `?tab=dependencies`) |
-| `GET /api/metrics` | JSON security metrics for all configured repositories |
+| `GET /` | Dashboard HTML view (use `?tab=engineering` or `?tab=dependencies`) |
+| `GET /api/metrics` | JSON engineering metrics for all configured repositories |
 | `GET /api/dependencies` | JSON dependency metrics for all configured repositories |
-| `GET /api/repo?owner=X&repo=Y` | JSON security data for a specific repository |
+| `GET /api/repo?owner=X&repo=Y` | JSON engineering data for a specific repository |
 | `GET /api/repo/dependencies?owner=X&repo=Y` | JSON dependency data for a specific repository |
 | `GET /health` | Health check endpoint |
 
@@ -88,7 +88,7 @@ A Go-based web dashboard that aggregates GitHub Security information and Go depe
 ## Project Structure
 
 ```
-security-dashboard/
+engineering-dashboard/
 ├── main.go              # Application entry point
 ├── go.mod               # Go module definition
 ├── repos.yaml           # Repository configuration

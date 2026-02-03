@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/maersk/security-dashboard/config"
-	"github.com/maersk/security-dashboard/github"
-	"github.com/maersk/security-dashboard/handlers"
+	"github.com/maersk/engineering-dashboard/config"
+	"github.com/maersk/engineering-dashboard/github"
+	"github.com/maersk/engineering-dashboard/handlers"
 )
 
 func main() {

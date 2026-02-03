@@ -1,4 +1,4 @@
-module github.com/maersk/security-dashboard
+module github.com/maersk/engineering-dashboard
 
 go 1.25
 

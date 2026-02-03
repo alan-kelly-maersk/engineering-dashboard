@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/maersk/security-dashboard/goproxy"
-	"github.com/maersk/security-dashboard/models"
+	"github.com/maersk/engineering-dashboard/goproxy"
+	"github.com/maersk/engineering-dashboard/models"
 )
 
 var (

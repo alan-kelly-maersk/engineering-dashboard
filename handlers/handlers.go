@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/maersk/security-dashboard/config"
-	"github.com/maersk/security-dashboard/github"
-	"github.com/maersk/security-dashboard/gomod"
-	"github.com/maersk/security-dashboard/goproxy"
-	"github.com/maersk/security-dashboard/models"
+	"github.com/maersk/engineering-dashboard/config"
+	"github.com/maersk/engineering-dashboard/github"
+	"github.com/maersk/engineering-dashboard/gomod"
+	"github.com/maersk/engineering-dashboard/goproxy"
+	"github.com/maersk/engineering-dashboard/models"
 )
 
 type Handler struct {
