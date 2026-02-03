@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engineering Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #30363d;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .shield-icon {
+            width: 32px;
+            height: 32px;
+        }
+
+        .refresh-btn {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .refresh-btn:hover {
+            background: #2ea043;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            color: #8b949e;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tab:hover {
+            color: #c9d1d9;
+        }
+
+        .tab.active {
+            color: #c9d1d9;
+            border-bottom-color: #f78166;
+        }
+
+        .tab-badge {
+            background: #30363d;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+        }
+
+        .tab.active .tab-badge {
+            background: #f7816633;
+            color: #f78166;
+        }
+
+        .tab-badge.warning {
+            background: #d2992233;
+            color: #d29922;
+        }
+
+        .tab-badge.danger {
+            background: #f8514933;
+            color: #f85149;
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .metric-card h3 {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #8b949e;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 600;
+        }
+
+        .metric-value.critical { color: #f85149; }
+        .metric-value.high { color: #db6d28; }
+        .metric-value.medium { color: #d29922; }
+        .metric-value.low { color: #3fb950; }
+        .metric-value.neutral { color: #58a6ff; }
+
+        .severity-breakdown {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .severity-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.75rem;
+        }
+
+        .severity-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .severity-dot.critical { background: #f85149; }
+        .severity-dot.high { background: #db6d28; }
+        .severity-dot.medium { background: #d29922; }
+        .severity-dot.low { background: #3fb950; }
+        .severity-dot.unknown { background: #8b949e; }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .repo-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .repo-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+
+        .repo-card.has-error {
+            border-color: #f85149;
+        }
+
+        .repo-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .repo-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        .repo-name:hover {
+            text-decoration: underline;
+        }
+
+        .repo-stats {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #8b949e;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .stat-value.zero { color: #3fb950; }
+        .stat-value.warning { color: #d29922; }
+        .stat-value.danger { color: #f85149; }
+
+        .alert-list {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #30363d;
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            font-size: 0.875rem;
+        }
+
+        .alert-item + .alert-item {
+            border-top: 1px solid #21262d;
+        }
+
+        .alert-severity {
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+
+        .alert-severity.critical { background: #f8514922; color: #f85149; }
+        .alert-severity.high { background: #db6d2822; color: #db6d28; }
+        .alert-severity.medium { background: #d2992222; color: #d29922; }
+        .alert-severity.low { background: #3fb95022; color: #3fb950; }
+
+        .alert-title {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .alert-link {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        .alert-link:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background: #f8514922;
+            border: 1px solid #f85149;
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: #f85149;
+        }
+
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+            font-weight: 500;
+        }
+
+        .collapsible-header::before {
+            content: '▶';
+            font-size: 0.625rem;
+            transition: transform 0.2s;
+        }
+
+        .collapsible-header.expanded::before {
+            transform: rotate(90deg);
+        }
+
+        .collapsible-content {
+            display: none;
+        }
+
+        .collapsible-content.show {
+            display: block;
+        }
+
+        .no-alerts {
+            color: #3fb950;
+            font-size: 0.875rem;
+            padding: 0.5rem 0;
+        }
+
+        /* Dependencies specific styles */
+        .go-version {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            background: #21262d;
+            border-radius: 6px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+
+        .go-version.outdated {
+            background: #d2992233;
+            color: #d29922;
+        }
+
+        .go-version.current {
+            background: #3fb95022;
+            color: #3fb950;
+        }
+
+        .version-arrow {
+            color: #8b949e;
+        }
+
+        .dep-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+        }
+
+        .dep-table th {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid #30363d;
+            color: #8b949e;
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .dep-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #21262d;
+        }
+
+        .dep-table tr:hover {
+            background: #161b22;
+        }
+
+        .dep-name {
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            color: #58a6ff;
+            word-break: break-all;
+        }
+
+        .dep-version {
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+        }
+
+        .dep-version.outdated {
+            color: #d29922;
+        }
+
+        .dep-version.current {
+            color: #3fb950;
+        }
+
+        .dep-badge {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .dep-badge.indirect {
+            background: #30363d;
+            color: #8b949e;
+        }
+
+        .dep-badge.outdated {
+            background: #d2992233;
+            color: #d29922;
+        }
+
+        .dep-badge.uptodate {
+            background: #3fb95022;
+            color: #3fb950;
+        }
+
+        .dep-badge.error {
+            background: #f8514922;
+            color: #f85149;
+        }
+
+        .module-path {
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 0.75rem;
+            color: #8b949e;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #8b949e;
+        }
+
+        .loading::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .repo-stats {
+                gap: 1rem;
+            }
+
+            .dep-table {
+                font-size: 0.75rem;
+            }
+
+            .dep-table th, .dep-table td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>
+                <svg class="shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                Engineering Dashboard
+            </h1>
+            <button class="refresh-btn" onclick="location.reload()">Refresh</button>
+        </header>
+
+        <nav class="tabs">
+            <a href="/?tab=security" class="tab {{if eq .ActiveTab "security"}}active{{end}}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                Security
+                {{if gt .Security.TotalDependabotAlerts 0}}
+                <span class="tab-badge danger">{{.Security.TotalDependabotAlerts}}</span>
+                {{end}}
+            </a>
+            <a href="/?tab=dependencies" class="tab {{if eq .ActiveTab "dependencies"}}active{{end}}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+                Dependencies
+                {{if eq .ActiveTab "dependencies"}}
+                    {{if gt .Dependencies.OutdatedDependencies 0}}
+                    <span class="tab-badge warning">{{.Dependencies.OutdatedDependencies}} outdated</span>
+                    {{end}}
+                {{end}}
+            </a>
+        </nav>
+
+        {{if eq .ActiveTab "security"}}
+        <!-- Security Tab -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <h3>Repositories</h3>
+                <div class="metric-value neutral">{{.Security.TotalRepos}}</div>
+            </div>
+            <div class="metric-card">
+                <h3>Dependabot Alerts</h3>
+                <div class="metric-value {{if gt .Security.TotalDependabotAlerts 0}}danger{{else}}low{{end}}">{{.Security.TotalDependabotAlerts}}</div>
+                {{if .Security.DependabotBySeverity}}
+                <div class="severity-breakdown">
+                    {{range $severity, $count := .Security.DependabotBySeverity}}
+                    <span class="severity-item">
+                        <span class="severity-dot {{$severity}}"></span>
+                        {{$severity}}: {{$count}}
+                    </span>
+                    {{end}}
+                </div>
+                {{end}}
+            </div>
+            <div class="metric-card">
+                <h3>Code Scanning Alerts</h3>
+                <div class="metric-value {{if gt .Security.TotalCodeScanningAlerts 0}}danger{{else}}low{{end}}">{{.Security.TotalCodeScanningAlerts}}</div>
+                {{if .Security.CodeScanningBySeverity}}
+                <div class="severity-breakdown">
+                    {{range $severity, $count := .Security.CodeScanningBySeverity}}
+                    <span class="severity-item">
+                        <span class="severity-dot {{$severity}}"></span>
+                        {{$severity}}: {{$count}}
+                    </span>
+                    {{end}}
+                </div>
+                {{end}}
+            </div>
+            <div class="metric-card">
+                <h3>Secret Scanning Alerts</h3>
+                <div class="metric-value {{if gt .Security.TotalSecretAlerts 0}}danger{{else}}low{{end}}">{{.Security.TotalSecretAlerts}}</div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="section-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                Repositories
+            </h2>
+            <div class="repo-grid">
+                {{range .Security.Repositories}}
+                <div class="repo-card {{if .Error}}has-error{{end}}">
+                    <div class="repo-header">
+                        <a href="https://github.com/{{.FullName}}/security" target="_blank" class="repo-name">{{.FullName}}</a>
+                    </div>
+                    
+                    <div class="repo-stats">
+                        <div class="stat-group">
+                            <span class="stat-label">Dependabot</span>
+                            <span class="stat-value {{if eq (len .DependabotAlerts) 0}}zero{{else if gt (len .DependabotAlerts) 5}}danger{{else}}warning{{end}}">
+                                {{len .DependabotAlerts}}
+                            </span>
+                        </div>
+                        <div class="stat-group">
+                            <span class="stat-label">Code Scanning</span>
+                            <span class="stat-value {{if eq (len .CodeScanningAlerts) 0}}zero{{else if gt (len .CodeScanningAlerts) 5}}danger{{else}}warning{{end}}">
+                                {{len .CodeScanningAlerts}}
+                            </span>
+                        </div>
+                        <div class="stat-group">
+                            <span class="stat-label">Secrets</span>
+                            <span class="stat-value {{if eq (len .SecretScanningAlerts) 0}}zero{{else}}danger{{end}}">
+                                {{len .SecretScanningAlerts}}
+                            </span>
+                        </div>
+                    </div>
+
+                    {{if .Error}}
+                    <div class="error-message">{{.Error}}</div>
+                    {{end}}
+
+                    {{if or .DependabotAlerts .CodeScanningAlerts .SecretScanningAlerts}}
+                    <div class="alert-list">
+                        {{if .DependabotAlerts}}
+                        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                            Dependabot Alerts ({{len .DependabotAlerts}})
+                        </div>
+                        <div class="collapsible-content">
+                            {{range .DependabotAlerts}}
+                            <div class="alert-item">
+                                <span class="alert-severity {{.SecurityAdvisory.Severity}}">{{.SecurityAdvisory.Severity}}</span>
+                                <span class="alert-title">
+                                    <a href="{{.HTMLURL}}" target="_blank" class="alert-link">{{.SecurityAdvisory.Summary}}</a>
+                                    <br><small style="color: #8b949e;">{{.SecurityVuln.Package.Name}}</small>
+                                </span>
+                            </div>
+                            {{end}}
+                        </div>
+                        {{end}}
+
+                        {{if .CodeScanningAlerts}}
+                        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                            Code Scanning Alerts ({{len .CodeScanningAlerts}})
+                        </div>
+                        <div class="collapsible-content">
+                            {{range .CodeScanningAlerts}}
+                            <div class="alert-item">
+                                <span class="alert-severity {{.Rule.SecuritySeverityLevel}}">{{if .Rule.SecuritySeverityLevel}}{{.Rule.SecuritySeverityLevel}}{{else}}{{.Rule.Severity}}{{end}}</span>
+                                <span class="alert-title">
+                                    <a href="{{.HTMLURL}}" target="_blank" class="alert-link">{{.Rule.Description}}</a>
+                                    <br><small style="color: #8b949e;">{{.MostRecentInstance.Location.Path}}:{{.MostRecentInstance.Location.StartLine}}</small>
+                                </span>
+                            </div>
+                            {{end}}
+                        </div>
+                        {{end}}
+
+                        {{if .SecretScanningAlerts}}
+                        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                            Secret Scanning Alerts ({{len .SecretScanningAlerts}})
+                        </div>
+                        <div class="collapsible-content">
+                            {{range .SecretScanningAlerts}}
+                            <div class="alert-item">
+                                <span class="alert-severity high">secret</span>
+                                <span class="alert-title">
+                                    <a href="{{.HTMLURL}}" target="_blank" class="alert-link">{{.SecretTypeDesc}}</a>
+                                </span>
+                            </div>
+                            {{end}}
+                        </div>
+                        {{end}}
+                    </div>
+                    {{else}}
+                    {{if not .Error}}
+                    <div class="no-alerts">No open security alerts</div>
+                    {{end}}
+                    {{end}}
+                </div>
+                {{end}}
+            </div>
+        </section>
+
+        {{else if eq .ActiveTab "dependencies"}}
+        <!-- Dependencies Tab -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <h3>Go Repositories</h3>
+                <div class="metric-value neutral">{{.Dependencies.GoRepos}} / {{.Dependencies.TotalRepos}}</div>
+                <div style="font-size: 0.75rem; color: #8b949e; margin-top: 0.5rem;">detected by GitHub</div>
+            </div>
+            <div class="metric-card">
+                <h3>go.mod Files</h3>
+                <div class="metric-value neutral">{{.Dependencies.TotalGoModFiles}}</div>
+                <div style="font-size: 0.75rem; color: #8b949e; margin-top: 0.5rem;">in {{.Dependencies.ReposWithGoMod}} repos</div>
+            </div>
+            <div class="metric-card">
+                <h3>Latest Go Version</h3>
+                <div class="metric-value neutral" style="font-size: 1.75rem;">{{if .Dependencies.LatestGoVersion}}{{.Dependencies.LatestGoVersion}}{{else}}Unknown{{end}}</div>
+            </div>
+            <div class="metric-card">
+                <h3>Outdated Go Versions</h3>
+                <div class="metric-value {{if gt .Dependencies.OutdatedGoVersions 0}}warning{{else}}low{{end}}">{{.Dependencies.OutdatedGoVersions}}</div>
+            </div>
+            <div class="metric-card">
+                <h3>Outdated Dependencies</h3>
+                <div class="metric-value {{if gt .Dependencies.OutdatedDependencies 0}}warning{{else}}low{{end}}">{{.Dependencies.OutdatedDependencies}}</div>
+                <div style="font-size: 0.75rem; color: #8b949e; margin-top: 0.5rem;">of {{.Dependencies.TotalDependencies}} total</div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="section-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                </svg>
+                Go Modules
+            </h2>
+            <div class="repo-grid">
+                {{range $repo := .Dependencies.Repositories}}
+                <div class="repo-card {{if $repo.Error}}has-error{{end}}">
+                    <div class="repo-header">
+                        <a href="https://github.com/{{$repo.FullName}}" target="_blank" class="repo-name">{{$repo.FullName}}</a>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            {{if $repo.IsGoRepo}}
+                            <span class="dep-badge uptodate">Go</span>
+                            {{else}}
+                            <span class="dep-badge indirect">Not Go</span>
+                            {{end}}
+                            {{if gt (len $repo.GoMods) 1}}
+                            <span class="dep-badge" style="background: #58a6ff33; color: #58a6ff;">{{len $repo.GoMods}} modules</span>
+                            {{end}}
+                        </div>
+                    </div>
+
+                    {{if $repo.Error}}
+                    <div class="error-message">{{$repo.Error}}</div>
+                    {{else if not $repo.IsGoRepo}}
+                    <div class="no-alerts" style="color: #8b949e;">Not a Go repository (skipped)</div>
+                    {{else if eq (len $repo.GoMods) 0}}
+                    <div class="no-alerts" style="color: #8b949e;">Go repo but no go.mod found</div>
+                    {{else}}
+                    
+                    {{range $repo.GoMods}}
+                    <div class="gomod-section" style="margin-top: 1rem; {{if gt (len $repo.GoMods) 1}}padding: 1rem; background: #0d1117; border-radius: 6px; border: 1px solid #21262d;{{end}}">
+                        {{if gt (len $repo.GoMods) 1}}
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                            <span class="module-path" style="font-size: 0.875rem; color: #58a6ff;">{{.FilePath}}</span>
+                            <span class="go-version {{if .GoVersionOutdated}}outdated{{else}}current{{end}}">
+                                Go {{.GoVersion}}
+                                {{if .GoVersionOutdated}}
+                                <span class="version-arrow">→</span> {{.LatestGoVersion}}
+                                {{end}}
+                            </span>
+                        </div>
+                        {{else}}
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                            <div class="module-path">{{.ModulePath}}</div>
+                            {{if .GoVersion}}
+                            <span class="go-version {{if .GoVersionOutdated}}outdated{{else}}current{{end}}">
+                                Go {{.GoVersion}}
+                                {{if .GoVersionOutdated}}
+                                <span class="version-arrow">→</span> {{.LatestGoVersion}}
+                                {{end}}
+                            </span>
+                            {{end}}
+                        </div>
+                        {{if ne .FilePath "go.mod"}}
+                        <div class="module-path" style="font-size: 0.75rem; margin-bottom: 0.5rem;">📁 {{.FilePath}}</div>
+                        {{end}}
+                        {{end}}
+
+                        <div class="repo-stats">
+                            <div class="stat-group">
+                                <span class="stat-label">Direct Deps</span>
+                                <span class="stat-value neutral" style="font-size: 1rem;">{{.DirectDeps}}</span>
+                            </div>
+                            <div class="stat-group">
+                                <span class="stat-label">Indirect Deps</span>
+                                <span class="stat-value neutral" style="font-size: 1rem;">{{.IndirectDeps}}</span>
+                            </div>
+                            <div class="stat-group">
+                                <span class="stat-label">Outdated</span>
+                                <span class="stat-value {{if gt .OutdatedDeps 0}}warning{{else}}zero{{end}}" style="font-size: 1rem;">{{.OutdatedDeps}}</span>
+                            </div>
+                        </div>
+
+                        {{if .Dependencies}}
+                        <div class="alert-list" style="margin-top: 0.75rem; padding-top: 0.75rem;">
+                            <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                                Dependencies ({{.TotalDeps}})
+                            </div>
+                            <div class="collapsible-content">
+                                <table class="dep-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Module</th>
+                                            <th>Current</th>
+                                            <th>Latest</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{range .Dependencies}}
+                                        <tr>
+                                            <td>
+                                                <span class="dep-name">{{.Path}}</span>
+                                                {{if .IsIndirect}}<span class="dep-badge indirect">indirect</span>{{end}}
+                                            </td>
+                                            <td><span class="dep-version">{{.CurrentVersion}}</span></td>
+                                            <td>
+                                                {{if .Error}}
+                                                <span class="dep-badge error">error</span>
+                                                {{else if .LatestVersion}}
+                                                <span class="dep-version {{if .IsOutdated}}outdated{{else}}current{{end}}">{{.LatestVersion}}</span>
+                                                {{else}}
+                                                <span style="color: #8b949e;">-</span>
+                                                {{end}}
+                                            </td>
+                                            <td>
+                                                {{if .Error}}
+                                                <span class="dep-badge error" title="{{.Error}}">N/A</span>
+                                                {{else if .IsOutdated}}
+                                                <span class="dep-badge outdated">Out of date</span>
+                                                {{else}}
+                                                <span class="dep-badge uptodate">Up to date</span>
+                                                {{end}}
+                                            </td>
+                                        </tr>
+                                        {{end}}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {{end}}
+                    </div>
+                    {{end}}
+                    {{end}}
+                </div>
+                {{end}}
+            </div>
+        </section>
+        {{end}}
+    </div>
+
+    <script>
+        function toggleCollapsible(header) {
+            header.classList.toggle('expanded');
+            const content = header.nextElementSibling;
+            content.classList.toggle('show');
+        }
+    </script>
+</body>
+</html>
