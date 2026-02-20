@@ -343,11 +343,11 @@ func FormatDependencyList(deps []string, maxItems int) string {
 	}
 
 	for i := 0; i < shown; i++ {
-		sb.WriteString(fmt.Sprintf("- %s\n", deps[i]))
+		fmt.Fprintf(&sb, "- %s\n", deps[i])
 	}
 
 	if len(deps) > shown {
-		sb.WriteString(fmt.Sprintf("\n... and %d more\n", len(deps)-shown))
+		fmt.Fprintf(&sb, "\n... and %d more\n", len(deps)-shown)
 	}
 
 	return sb.String()
