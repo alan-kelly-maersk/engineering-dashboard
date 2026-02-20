@@ -1,0 +1,13 @@
+.git
+.github
+terraform
+scripts
+*.md
+.gitignore
+.dockerignore
+Dockerfile
+engineering-dashboard
+*.out
+*.tfstate
+*.tfstate.backup
+.terraform/

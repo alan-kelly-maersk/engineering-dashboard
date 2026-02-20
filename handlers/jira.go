@@ -10,9 +10,12 @@ import (
 	"github.com/maersk/engineering-dashboard/models"
 )
 
+const ContentTypeHeader = "Content-Type"
+const ApplicationJSON = "application/json"
+
 // APIJiraEnabled returns whether Jira integration is configured
 func (h *Handler) APIJiraEnabled(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ApplicationJSON)
 
 	enabled := h.jiraClient != nil && h.jiraClient.IsConfigured()
 	response := map[string]interface{}{
@@ -24,12 +27,16 @@ func (h *Handler) APIJiraEnabled(w http.ResponseWriter, r *http.Request) {
 		response["base_url"] = h.jiraClient.GetBaseURL()
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // APIJiraEpics returns the list of open epics in the configured project
 func (h *Handler) APIJiraEpics(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ApplicationJSON)
 
 	if h.jiraClient == nil || !h.jiraClient.IsConfigured() {
 		http.Error(w, "Jira not configured", http.StatusServiceUnavailable)
@@ -51,12 +58,16 @@ func (h *Handler) APIJiraEpics(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // APIJiraCreateTicket creates a Jira ticket for a concern
 func (h *Handler) APIJiraCreateTicket(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ApplicationJSON)
 
 	if h.jiraClient == nil || !h.jiraClient.IsConfigured() {
 		http.Error(w, "Jira not configured", http.StatusServiceUnavailable)
@@ -96,7 +107,11 @@ func (h *Handler) APIJiraCreateTicket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // generateTicketContent creates the summary and description for a Jira ticket
@@ -331,11 +346,11 @@ func FormatDependencyList(deps []string, maxItems int) string {
 	}
 
 	for i := 0; i < shown; i++ {
-		sb.WriteString(fmt.Sprintf("- %s\n", deps[i]))
+		fmt.Fprintf(&sb, "- %s\n", deps[i])
 	}
 
 	if len(deps) > shown {
-		sb.WriteString(fmt.Sprintf("\n... and %d more\n", len(deps)-shown))
+		fmt.Fprintf(&sb, "\n... and %d more\n", len(deps)-shown)
 	}
 
 	return sb.String()

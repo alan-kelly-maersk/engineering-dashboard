@@ -1,5 +1,16 @@
-
 repositories:
-  # Format: owner/repo
   - owner: maersk-global
-    repo: engineering-dashboard
+    repo: mrmp
+  - owner: maersk-global
+    repo: mss
+  - owner: maersk-global
+    repo: mtts-go
+    sonarqube_project: mtts
+  - owner: maersk-global
+    repo: maersk-cloud-storage
+  - owner: maersk-global
+    repo: msah
+  - owner: maersk-global
+    repo: privateservicelink
+  - owner: maersk-global
+    repo: uram

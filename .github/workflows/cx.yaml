@@ -1,0 +1,339 @@
+name: CI/CD Pipeline
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  GO_VERSION: "1.25"
+  TF_VERSION: "1.7.0"
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  Pipeline stages:
+#
+#  1. build-and-test ─┬─> 2a. security-scan     ─┐
+#                     ├─> 2b. code-quality      ─┤
+#                     └─> 2c. terraform-validate─┤
+#                                                ├─> 3. docker-build-push
+#                                                │       ↓
+#                                                │   4. deploy-integration
+#                                                │       ↓
+#                                                │   5. smoke-test-integration
+#                                                │       ↓
+#                                                └── 6. deploy-production
+# ══════════════════════════════════════════════════════════════════════════════
+
+jobs:
+
+  # ──────────────────────────────────────────────
+  #  Stage 1 ▸ Build & Unit Test
+  # ──────────────────────────────────────────────
+  build-and-test:
+    name: "Build & Test"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build
+        run: go build -ldflags="-s -w" -o engineering-dashboard
+
+      - name: Unit tests
+        run: go test -v -race -coverprofile=coverage.out ./...
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.out
+          retention-days: 7
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary
+          path: engineering-dashboard
+          retention-days: 1
+
+  # ──────────────────────────────────────────────
+  #  Stage 2a ▸ Security Scanning
+  # ──────────────────────────────────────────────
+  security-scan:
+    name: "Security Scan"
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run gosec (static security analysis)
+        uses: securego/gosec@master
+        with:
+          args: ./...
+
+      - name: Run govulncheck (known vulnerability detection)
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+      - name: Verify dependency integrity
+        run: go mod verify
+
+  # ──────────────────────────────────────────────
+  #  Stage 2b ▸ Code Quality
+  # ──────────────────────────────────────────────
+  code-quality:
+    name: "Code Quality"
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+
+      - name: "Placeholder: golangci-lint"
+        run: echo "::warning::golangci-lint placeholder – configure linter rules in .golangci.yml"
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+
+      - name: Run SonarQube scan
+        uses: Maersk-Global/github-actions/SonarQube@main
+        with:
+          host: ${{ vars.SONARQUBE_URL }}
+          login: ${{ secrets.MDN_SONARQUBE_TOKEN }}
+          projectKey: "engineering-dashboard"
+          projectName: "Engineering Dashboard"
+          projectBaseDir: "."
+          projectVersion: "0.0.1"
+          binding: true
+          extra_sonar_args: |
+            -Dsonar.qualitygate.wait=true \
+            -Dsonar.go.coverage.reportPaths=coverage.out
+
+  # ──────────────────────────────────────────────
+  #  Stage 2c ▸ Terraform Validate
+  # ──────────────────────────────────────────────
+  terraform-validate:
+    name: "Terraform Validate"
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform format check
+        working-directory: terraform
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init (validation only)
+        working-directory: terraform
+        run: terraform init -backend=false
+
+      - name: Terraform validate
+        working-directory: terraform
+        run: terraform validate
+
+  # ──────────────────────────────────────────────
+  #  Stage 3 ▸ Build & Push Container Image
+  #  (only on push to master)
+  # ──────────────────────────────────────────────
+  docker-build-push:
+    name: "Build & Push Image"
+    runs-on: ubuntu-latest
+    needs: [security-scan, code-quality, terraform-validate]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ──────────────────────────────────────────────
+  #  Stage 4 ▸ Deploy to Integration
+  # ──────────────────────────────────────────────
+  deploy-integration:
+    name: "Deploy ▸ Integration"
+    runs-on: ubuntu-latest
+    needs: docker-build-push
+    environment: integration
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Select integration workspace
+        working-directory: terraform
+        run: terraform workspace select integration || terraform workspace new integration
+
+      - name: Terraform plan
+        working-directory: terraform
+        run: |
+          terraform plan \
+            -var-file=environments/integration.tfvars \
+            -var="container_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-build-push.outputs.image-tag }}" \
+            -var="github_token=${{ secrets.PAT_FOR_GITHUB }}" \
+            -var="sonarqube_token=${{ secrets.SONARQUBE_TOKEN }}" \
+            -var="sonarqube_url=${{ secrets.SONARQUBE_URL }}" \
+            -var="atlassian_url=${{ secrets.ATLASSIAN_URL }}" \
+            -var="atlassian_cloud_id=${{ secrets.ATLASSIAN_CLOUD_ID }}" \
+            -var="atlassian_email=${{ secrets.ATLASSIAN_EMAIL }}" \
+            -var="atlassian_api_token=${{ secrets.ATLASSIAN_API_TOKEN }}" \
+            -var="jira_project_key=${{ secrets.JIRA_PROJECT_KEY }}" \
+            -var="jira_epic_link_field=${{ secrets.JIRA_EPIC_LINK_FIELD }}" \
+            -out=tfplan
+
+      - name: Terraform apply
+        working-directory: terraform
+        run: terraform apply -auto-approve tfplan
+
+  # ──────────────────────────────────────────────
+  #  Stage 5 ▸ Integration Smoke Test
+  # ──────────────────────────────────────────────
+  smoke-test-integration:
+    name: "Smoke Test ▸ Integration"
+    runs-on: ubuntu-latest
+    needs: deploy-integration
+    steps:
+      # LATERS: Replace with the actual integration environment URL once deployed
+      # - name: Health check
+      #   run: |
+      #     MAX_RETRIES=10
+      #     RETRY_INTERVAL=15
+      #     for i in $(seq 1 $MAX_RETRIES); do
+      #       if curl -sf "https://l7se-do-int-ca.<region>.azurecontainerapps.io/health"; then
+      #         echo "Health check passed on attempt $i"
+      #         exit 0
+      #       fi
+      #       echo "Attempt $i/$MAX_RETRIES failed, retrying in ${RETRY_INTERVAL}s..."
+      #       sleep $RETRY_INTERVAL
+      #     done
+      #     echo "::error::Health check failed after $MAX_RETRIES attempts"
+      #     exit 1
+      - name: "Placeholder: health check"
+        run: echo "::warning::Smoke test placeholder – configure the integration environment URL for health checks"
+
+  # ──────────────────────────────────────────────
+  #  Stage 6 ▸ Deploy to Production
+  #  (requires manual approval via GitHub Environment protection rules)
+  # ──────────────────────────────────────────────
+  deploy-production:
+    name: "Deploy ▸ Production"
+    runs-on: ubuntu-latest
+    needs: smoke-test-integration
+    environment: production
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Select production workspace
+        working-directory: terraform
+        run: terraform workspace select production || terraform workspace new production
+
+      - name: Terraform plan
+        working-directory: terraform
+        run: |
+          terraform plan \
+            -var-file=environments/production.tfvars \
+            -var="container_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-build-push.outputs.image-tag }}" \
+            -var="github_token=${{ secrets.PAT_FOR_GITHUB }}" \
+            -var="sonarqube_token=${{ secrets.SONARQUBE_TOKEN }}" \
+            -var="sonarqube_url=${{ secrets.SONARQUBE_URL }}" \
+            -var="atlassian_url=${{ secrets.ATLASSIAN_URL }}" \
+            -var="atlassian_cloud_id=${{ secrets.ATLASSIAN_CLOUD_ID }}" \
+            -var="atlassian_email=${{ secrets.ATLASSIAN_EMAIL }}" \
+            -var="atlassian_api_token=${{ secrets.ATLASSIAN_API_TOKEN }}" \
+            -var="jira_project_key=${{ secrets.JIRA_PROJECT_KEY }}" \
+            -var="jira_epic_link_field=${{ secrets.JIRA_EPIC_LINK_FIELD }}" \
+            -out=tfplan
+
+      - name: Terraform apply
+        working-directory: terraform
+        run: terraform apply -auto-approve tfplan

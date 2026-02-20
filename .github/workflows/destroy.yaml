@@ -1,0 +1,70 @@
+name: Destroy Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to destroy"
+        required: true
+        type: choice
+        options:
+          - integration
+          - production
+      confirm:
+        description: "Type the environment name to confirm"
+        required: true
+        type: string
+
+jobs:
+  destroy:
+    name: "Destroy ▸ ${{ inputs.environment }}"
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+    steps:
+      - name: Validate confirmation
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          if [ "${CONFIRM}" != "${ENVIRONMENT}" ]; then
+            echo "::error::Confirmation mismatch. You typed '${CONFIRM}' but selected '${ENVIRONMENT}'."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Select workspace
+        working-directory: terraform
+        env: 
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: terraform workspace select ${ENVIRONMENT}
+
+      - name: Terraform destroy
+        working-directory: terraform
+        run: |
+          terraform destroy -auto-approve \
+            -var-file=environments/${{ inputs.environment }}.tfvars \
+            -var="container_image=placeholder" \
+            -var="github_token=${{ secrets.PAT_FOR_GITHUB }}" \
+            -var="sonarqube_token=${{ secrets.SONARQUBE_TOKEN }}" \
+            -var="sonarqube_url=${{ secrets.SONARQUBE_URL }}" \
+            -var="atlassian_url=${{ secrets.ATLASSIAN_URL }}" \
+            -var="atlassian_cloud_id=${{ secrets.ATLASSIAN_CLOUD_ID }}" \
+            -var="atlassian_email=${{ secrets.ATLASSIAN_EMAIL }}" \
+            -var="atlassian_api_token=${{ secrets.ATLASSIAN_API_TOKEN }}" \
+            -var="jira_project_key=${{ secrets.JIRA_PROJECT_KEY }}" \
+            -var="jira_epic_link_field=${{ secrets.JIRA_EPIC_LINK_FIELD }}"

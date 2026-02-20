@@ -191,6 +191,10 @@
             gap: 1rem;
         }
 
+        .repo-grid-2col {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
         .repo-card {
             background: #161b22;
             border: 1px solid #30363d;
@@ -684,6 +688,10 @@
             .metrics-grid {
                 grid-template-columns: 1fr 1fr;
             }
+
+            .repo-grid-2col {
+                grid-template-columns: 1fr;
+            }
             
             .repo-stats {
                 gap: 1rem;
@@ -708,7 +716,19 @@
                 </svg>
                 Engineering Dashboard
             </h1>
-            <button class="refresh-btn" onclick="location.reload()">Refresh</button>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                {{if .AuthEnabled}}
+                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: #8b949e;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span title="{{.UserEmail}}">{{.UserName}}</span>
+                    <a href="/auth/logout" style="color: #8b949e; text-decoration: none; margin-left: 0.25rem; padding: 0.25rem 0.5rem; border: 1px solid #30363d; border-radius: 6px; font-size: 0.75rem;" onmouseover="this.style.borderColor='#8b949e'" onmouseout="this.style.borderColor='#30363d'">Sign out</a>
+                </div>
+                {{end}}
+                <button class="refresh-btn" onclick="location.reload()">Refresh</button>
+            </div>
         </header>
 
         <nav class="tabs">
@@ -1153,11 +1173,11 @@
                 </svg>
                 SonarQube Projects
             </h2>
-            <div class="repo-grid">
+            <div class="repo-grid repo-grid-2col">
                 {{range $repo := .CodeQuality.Repositories}}
                 <div class="repo-card {{if $repo.Error}}has-error{{end}}">
                     <div class="repo-header">
-                        <a href="https://github.com/{{$repo.FullName}}" target="_blank" class="repo-name">{{$repo.FullName}}</a>
+                        <a href="{{$.SonarQubeBaseURL}}/dashboard?id={{$repo.SonarQubeProject}}" target="_blank" class="repo-name">{{$repo.FullName}}</a>
                         <div style="display: flex; gap: 0.5rem; align-items: center;">
                             {{if $repo.QualityGateStatus}}
                             <span class="dep-badge {{if eq $repo.QualityGateStatus "OK"}}uptodate{{else}}error{{end}}">

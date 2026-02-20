@@ -37,6 +37,11 @@ func (c *Client) IsConfigured() bool {
 	return c.baseURL != "" && c.token != ""
 }
 
+// GetBaseURL returns the configured SonarQube server URL
+func (c *Client) GetBaseURL() string {
+	return c.baseURL
+}
+
 // ProjectMetrics represents the quality metrics for a SonarQube project
 type ProjectMetrics struct {
 	ProjectKey       string  `json:"project_key"`
@@ -124,8 +129,11 @@ func (c *Client) GetProjectMetrics(projectKey string) ProjectMetrics {
 		metrics.Error = fmt.Sprintf("Failed to fetch measures: %v", err)
 		return metrics
 	}
-	defer resp.Body.Close()
-
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Println("Failed to close response body", err)
+		}
+	}()
 	if resp.StatusCode == http.StatusNotFound {
 		metrics.Error = "Project not found in SonarQube"
 		return metrics
@@ -151,19 +159,40 @@ func (c *Client) GetProjectMetrics(projectKey string) ProjectMetrics {
 	for _, m := range measuresResp.Component.Measures {
 		switch m.Metric {
 		case "bugs":
-			fmt.Sscanf(m.Value, "%d", &metrics.Bugs)
+			_, err := fmt.Sscanf(m.Value, "%d", &metrics.Bugs)
+			if err != nil {
+				fmt.Println("Failed to parse bugs", err)
+			}
 		case "vulnerabilities":
-			fmt.Sscanf(m.Value, "%d", &metrics.Vulnerabilities)
+			_, err := fmt.Sscanf(m.Value, "%d", &metrics.Vulnerabilities)
+			if err != nil {
+				fmt.Println("Failed to parse vulnerabilities", err)
+			}
 		case "code_smells":
-			fmt.Sscanf(m.Value, "%d", &metrics.CodeSmells)
+			_, err := fmt.Sscanf(m.Value, "%d", &metrics.CodeSmells)
+			if err != nil {
+				fmt.Println("Failed to parse code smells", err)
+			}
 		case "security_hotspots":
-			fmt.Sscanf(m.Value, "%d", &metrics.SecurityHotspots)
+			_, err := fmt.Sscanf(m.Value, "%d", &metrics.SecurityHotspots)
+			if err != nil {
+				fmt.Println("Failed to parse security hotspots", err)
+			}
 		case "coverage":
-			fmt.Sscanf(m.Value, "%f", &metrics.Coverage)
+			_, err := fmt.Sscanf(m.Value, "%f", &metrics.Coverage)
+			if err != nil {
+				fmt.Println("Failed to parse coverage", err)
+			}
 		case "duplicated_lines_density":
-			fmt.Sscanf(m.Value, "%f", &metrics.DuplicatedLines)
+			_, err := fmt.Sscanf(m.Value, "%f", &metrics.DuplicatedLines)
+			if err != nil {
+				fmt.Println("Failed to parse duplicated lines density", err)
+			}
 		case "ncloc":
-			fmt.Sscanf(m.Value, "%d", &metrics.LinesOfCode)
+			_, err := fmt.Sscanf(m.Value, "%d", &metrics.LinesOfCode)
+			if err != nil {
+				fmt.Println("Failed to parse lines of code", err)
+			}
 		case "reliability_rating":
 			metrics.ReliabilityRating = ratingToLetter(m.Value)
 		case "security_rating":
@@ -192,7 +221,11 @@ func (c *Client) fetchQualityGateStatus(metrics *ProjectMetrics, projectKey stri
 	if err != nil {
 		return // Non-critical, don't set error
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Println("Failed to close response body", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return
@@ -216,7 +249,11 @@ func (c *Client) fetchLastAnalysis(metrics *ProjectMetrics, projectKey string) {
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Println("Failed to close response body", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return
