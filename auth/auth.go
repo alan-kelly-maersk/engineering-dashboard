@@ -106,6 +106,7 @@ func (h *Handler) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 				Path:     "/",
 				MaxAge:   300,
 				HttpOnly: true,
+				Secure:   strings.HasPrefix(h.oauthConfig.RedirectURL, "https"),
 				SameSite: http.SameSiteLaxMode,
 			})
 			http.Redirect(w, r, "/auth/login", http.StatusFound)
@@ -136,6 +137,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   300,
 		HttpOnly: true,
+		Secure:   strings.HasPrefix(h.oauthConfig.RedirectURL, "https"),
 		SameSite: http.SameSiteLaxMode,
 	})
 
@@ -163,6 +165,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		Value:  "",
 		Path:   "/",
 		MaxAge: -1,
+		Secure: strings.HasPrefix(h.oauthConfig.RedirectURL, "https"),
 	})
 
 	// Check for errors from Azure AD (e.g. user denied consent)
@@ -212,6 +215,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 			Value:  "",
 			Path:   "/",
 			MaxAge: -1,
+			Secure: strings.HasPrefix(h.oauthConfig.RedirectURL, "https"),
 		})
 	}
 
@@ -227,6 +231,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
+		Secure:   strings.HasPrefix(h.oauthConfig.RedirectURL, "https"),
 	})
 
 	if h.enabled {
