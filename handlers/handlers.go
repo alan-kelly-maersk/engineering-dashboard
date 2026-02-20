@@ -29,6 +29,9 @@ type Handler struct {
 	authEnabled bool
 }
 
+const ContentTypeHeader = "Content-Type"
+const ApplicationJSON = "application/json"
+
 func NewHandler(ghClient *github.Client, sqClient *sonarqube.Client, jiraClient *jira.Client, cfg *config.Config, templatesDir string, authEnabled bool) (*Handler, error) {
 	tmpl, err := template.ParseGlob(filepath.Join(templatesDir, "*.html"))
 	if err != nil {
@@ -234,7 +237,7 @@ func parseGoVersion(v string) [2]int {
 
 func (h *Handler) APIMetrics(w http.ResponseWriter, r *http.Request) {
 	metrics := h.ghClient.GetDashboardMetrics(h.config.Repositories)
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ApplicationJSON)
 	err := json.NewEncoder(w).Encode(metrics)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -244,7 +247,7 @@ func (h *Handler) APIMetrics(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) APIDependencies(w http.ResponseWriter, r *http.Request) {
 	metrics := h.GetDependencyMetrics()
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ApplicationJSON)
 	err := json.NewEncoder(w).Encode(metrics)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -262,7 +265,7 @@ func (h *Handler) APIRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	summary := h.ghClient.GetRepoSecuritySummary(owner, repo)
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ApplicationJSON)
 	err := json.NewEncoder(w).Encode(summary)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -281,7 +284,7 @@ func (h *Handler) APIRepoDependencies(w http.ResponseWriter, r *http.Request) {
 
 	latestGo, _ := h.proxyClient.GetLatestGoVersion()
 	summary := h.getRepoDependencySummary(owner, repo, latestGo)
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ApplicationJSON)
 	err := json.NewEncoder(w).Encode(summary)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -290,7 +293,7 @@ func (h *Handler) APIRepoDependencies(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ApplicationJSON)
 	_, err := w.Write([]byte(`{"status":"ok"}`))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -388,7 +391,7 @@ func (h *Handler) APICodeQuality(w http.ResponseWriter, r *http.Request) {
 	}
 
 	metrics := h.GetCodeQualityMetrics()
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ApplicationJSON)
 	err := json.NewEncoder(w).Encode(metrics)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -425,7 +428,7 @@ func (h *Handler) APIRepoCodeQuality(w http.ResponseWriter, r *http.Request) {
 	}
 
 	metrics := h.sqClient.GetProjectMetrics(projectKey)
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ApplicationJSON)
 	err := json.NewEncoder(w).Encode(metrics)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

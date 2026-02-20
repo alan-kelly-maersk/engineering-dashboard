@@ -27,9 +27,12 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
     steps:
       - name: Validate confirmation
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+          ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          if [ "${{ inputs.confirm }}" != "${{ inputs.environment }}" ]; then
-            echo "::error::Confirmation mismatch. You typed '${{ inputs.confirm }}' but selected '${{ inputs.environment }}'."
+          if [ "${CONFIRM}" != "${ENVIRONMENT}" ]; then
+            echo "::error::Confirmation mismatch. You typed '${CONFIRM}' but selected '${ENVIRONMENT}'."
             exit 1
           fi
 
@@ -46,7 +49,9 @@ jobs:
 
       - name: Select workspace
         working-directory: terraform
-        run: terraform workspace select ${{ inputs.environment }}
+        env: 
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: terraform workspace select ${ENVIRONMENT}
 
       - name: Terraform destroy
         working-directory: terraform

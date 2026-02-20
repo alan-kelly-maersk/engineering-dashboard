@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -217,6 +218,16 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 			MaxAge: -1,
 			Secure: strings.HasPrefix(h.oauthConfig.RedirectURL, "https"),
 		})
+	}
+
+	allowedHosts := []string{
+		"https://trusted1.example.com/",
+		"https://trusted2.example.com/",
+	}
+
+	if !slices.Contains(allowedHosts, redirectURL) {
+		http.Error(w, "Invalid redirect URL", http.StatusForbidden)
+		return
 	}
 
 	http.Redirect(w, r, redirectURL, http.StatusFound)

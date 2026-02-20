@@ -10,9 +10,12 @@ import (
 	"github.com/maersk/engineering-dashboard/models"
 )
 
+const ContentTypeHeader = "Content-Type"
+const ApplicationJSON = "application/json"
+
 // APIJiraEnabled returns whether Jira integration is configured
 func (h *Handler) APIJiraEnabled(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ApplicationJSON)
 
 	enabled := h.jiraClient != nil && h.jiraClient.IsConfigured()
 	response := map[string]interface{}{
@@ -33,7 +36,7 @@ func (h *Handler) APIJiraEnabled(w http.ResponseWriter, r *http.Request) {
 
 // APIJiraEpics returns the list of open epics in the configured project
 func (h *Handler) APIJiraEpics(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ApplicationJSON)
 
 	if h.jiraClient == nil || !h.jiraClient.IsConfigured() {
 		http.Error(w, "Jira not configured", http.StatusServiceUnavailable)
@@ -64,7 +67,7 @@ func (h *Handler) APIJiraEpics(w http.ResponseWriter, r *http.Request) {
 
 // APIJiraCreateTicket creates a Jira ticket for a concern
 func (h *Handler) APIJiraCreateTicket(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(ContentTypeHeader, ApplicationJSON)
 
 	if h.jiraClient == nil || !h.jiraClient.IsConfigured() {
 		http.Error(w, "Jira not configured", http.StatusServiceUnavailable)
