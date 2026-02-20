@@ -1,0 +1,12 @@
+scripts/local.sh
+
+# Build artifacts
+engineering-dashboard
+*.out
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+crash.log

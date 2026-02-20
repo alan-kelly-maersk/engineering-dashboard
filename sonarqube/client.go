@@ -37,6 +37,11 @@ func (c *Client) IsConfigured() bool {
 	return c.baseURL != "" && c.token != ""
 }
 
+// GetBaseURL returns the configured SonarQube server URL
+func (c *Client) GetBaseURL() string {
+	return c.baseURL
+}
+
 // ProjectMetrics represents the quality metrics for a SonarQube project
 type ProjectMetrics struct {
 	ProjectKey       string  `json:"project_key"`

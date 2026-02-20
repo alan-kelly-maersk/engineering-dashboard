@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/maersk/engineering-dashboard/auth"
 	"github.com/maersk/engineering-dashboard/config"
 	"github.com/maersk/engineering-dashboard/github"
 	"github.com/maersk/engineering-dashboard/gomod"
@@ -25,9 +26,10 @@ type Handler struct {
 	jiraClient  *jira.Client
 	config      *config.Config
 	templates   *template.Template
+	authEnabled bool
 }
 
-func NewHandler(ghClient *github.Client, sqClient *sonarqube.Client, jiraClient *jira.Client, cfg *config.Config, templatesDir string) (*Handler, error) {
+func NewHandler(ghClient *github.Client, sqClient *sonarqube.Client, jiraClient *jira.Client, cfg *config.Config, templatesDir string, authEnabled bool) (*Handler, error) {
 	tmpl, err := template.ParseGlob(filepath.Join(templatesDir, "*.html"))
 	if err != nil {
 		return nil, err
@@ -44,6 +46,7 @@ func NewHandler(ghClient *github.Client, sqClient *sonarqube.Client, jiraClient 
 		jiraClient:  jiraClient,
 		config:      cfg,
 		templates:   tmpl,
+		authEnabled: authEnabled,
 	}, nil
 }
 
@@ -60,12 +63,27 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		Dependencies     models.DependencyMetrics
 		CodeQuality      models.CodeQualityMetrics
 		SonarQubeEnabled bool
+		SonarQubeBaseURL string
 		JiraEnabled      bool
 		JiraBaseURL      string
+		AuthEnabled      bool
+		UserName         string
+		UserEmail        string
 	}{
 		ActiveTab:        tab,
 		SonarQubeEnabled: h.sqClient != nil && h.sqClient.IsConfigured(),
 		JiraEnabled:      h.jiraClient != nil && h.jiraClient.IsConfigured(),
+		AuthEnabled:      h.authEnabled,
+	}
+
+	// Populate user info from auth context
+	if user := auth.GetUserFromContext(r); user != nil {
+		data.UserName = user.Name
+		data.UserEmail = user.Email
+	}
+
+	if data.SonarQubeEnabled {
+		data.SonarQubeBaseURL = h.sqClient.GetBaseURL()
 	}
 
 	if data.JiraEnabled {
