@@ -63,8 +63,11 @@ func (c *Client) GetLatestVersion(modulePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
-
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Println("Failed to close response body", err)
+		}
+	}()
 	if resp.StatusCode == http.StatusNotFound {
 		// Module not found on proxy (might be private)
 		return "", fmt.Errorf("module not found on proxy")
@@ -102,8 +105,11 @@ func (c *Client) GetLatestGoVersion() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
-
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Println("Failed to close response body", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("failed to fetch Go versions: status %d", resp.StatusCode)
 	}

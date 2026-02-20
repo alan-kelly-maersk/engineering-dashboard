@@ -184,7 +184,10 @@ func isGoVersionOutdated(current, latest string) bool {
 
 // parseGoMajorMinor extracts major and minor version numbers from a Go version string
 func parseGoMajorMinor(v string) (major, minor int) {
-	fmt.Sscanf(v, "%d.%d", &major, &minor)
+	_, err := fmt.Sscanf(v, "%d.%d", &major, &minor)
+	if err != nil {
+		return 0, 0
+	}
 	return
 }
 

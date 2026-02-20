@@ -24,7 +24,11 @@ func (h *Handler) APIJiraEnabled(w http.ResponseWriter, r *http.Request) {
 		response["base_url"] = h.jiraClient.GetBaseURL()
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // APIJiraEpics returns the list of open epics in the configured project
@@ -51,7 +55,11 @@ func (h *Handler) APIJiraEpics(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // APIJiraCreateTicket creates a Jira ticket for a concern
@@ -96,7 +104,11 @@ func (h *Handler) APIJiraCreateTicket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // generateTicketContent creates the summary and description for a Jira ticket

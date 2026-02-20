@@ -104,7 +104,7 @@ type jiraCreateResponse struct {
 // GetEpics fetches all open epics in the configured project
 func (c *Client) GetEpics() ([]Epic, error) {
 	if !c.IsConfigured() {
-		return nil, fmt.Errorf("Jira client not configured")
+		return nil, fmt.Errorf("jira client not configured")
 	}
 
 	// JQL to find open epics in the project
@@ -124,11 +124,14 @@ func (c *Client) GetEpics() ([]Epic, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch epics: %w", err)
 	}
-	defer resp.Body.Close()
-
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Println("Failed to close response body", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("Jira API returned status %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("jira API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
 	var searchResp jiraSearchResponse
@@ -150,7 +153,7 @@ func (c *Client) GetEpics() ([]Epic, error) {
 // CreateStory creates a new Story issue linked to an epic
 func (c *Client) CreateStory(req CreateIssueRequest) (*CreateIssueResponse, error) {
 	if !c.IsConfigured() {
-		return nil, fmt.Errorf("Jira client not configured")
+		return nil, fmt.Errorf("jira client not configured")
 	}
 
 	// Build the request body using Atlassian Document Format for description
@@ -193,12 +196,18 @@ func (c *Client) CreateStory(req CreateIssueRequest) (*CreateIssueResponse, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to create issue: %w", err)
 	}
-	defer resp.Body.Close()
-
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Println("Failed to close response body", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusCreated {
 		var errBody map[string]interface{}
-		json.NewDecoder(resp.Body).Decode(&errBody)
-		return nil, fmt.Errorf("Jira API returned status %d: %v", resp.StatusCode, errBody)
+		err := json.NewDecoder(resp.Body).Decode(&errBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse error body: %w", err)
+		}
+		return nil, fmt.Errorf("jira API returned status %d: %v", resp.StatusCode, errBody)
 	}
 
 	var createResp jiraCreateResponse

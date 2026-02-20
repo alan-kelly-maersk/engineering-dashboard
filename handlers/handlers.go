@@ -223,7 +223,10 @@ func isGoVersionOutdated(current, latest string) bool {
 
 func parseGoVersion(v string) [2]int {
 	var parts [2]int
-	fmt.Sscanf(v, "%d.%d", &parts[0], &parts[1])
+	_, err := fmt.Sscanf(v, "%d.%d", &parts[0], &parts[1])
+	if err != nil {
+		fmt.Println("Failed to parse Go version", err)
+	}
 	return parts
 }
 
@@ -232,13 +235,21 @@ func parseGoVersion(v string) [2]int {
 func (h *Handler) APIMetrics(w http.ResponseWriter, r *http.Request) {
 	metrics := h.ghClient.GetDashboardMetrics(h.config.Repositories)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(metrics)
+	err := json.NewEncoder(w).Encode(metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *Handler) APIDependencies(w http.ResponseWriter, r *http.Request) {
 	metrics := h.GetDependencyMetrics()
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(metrics)
+	err := json.NewEncoder(w).Encode(metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *Handler) APIRepo(w http.ResponseWriter, r *http.Request) {
@@ -252,7 +263,11 @@ func (h *Handler) APIRepo(w http.ResponseWriter, r *http.Request) {
 
 	summary := h.ghClient.GetRepoSecuritySummary(owner, repo)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(summary)
+	err := json.NewEncoder(w).Encode(summary)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *Handler) APIRepoDependencies(w http.ResponseWriter, r *http.Request) {
@@ -267,12 +282,20 @@ func (h *Handler) APIRepoDependencies(w http.ResponseWriter, r *http.Request) {
 	latestGo, _ := h.proxyClient.GetLatestGoVersion()
 	summary := h.getRepoDependencySummary(owner, repo, latestGo)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(summary)
+	err := json.NewEncoder(w).Encode(summary)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"status":"ok"}`))
+	_, err := w.Write([]byte(`{"status":"ok"}`))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetCodeQualityMetrics fetches SonarQube metrics for all repositories
@@ -366,7 +389,11 @@ func (h *Handler) APICodeQuality(w http.ResponseWriter, r *http.Request) {
 
 	metrics := h.GetCodeQualityMetrics()
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(metrics)
+	err := json.NewEncoder(w).Encode(metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // APIRepoCodeQuality returns code quality metrics for a specific repository
@@ -399,5 +426,9 @@ func (h *Handler) APIRepoCodeQuality(w http.ResponseWriter, r *http.Request) {
 
 	metrics := h.sqClient.GetProjectMetrics(projectKey)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(metrics)
+	err := json.NewEncoder(w).Encode(metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
