@@ -140,7 +140,7 @@ jobs:
           login: ${{ secrets.MDN_SONARQUBE_TOKEN }}
           projectKey: "engineering-dashboard"
           projectName: "Engineering Dashboard"
-          projectBaseDir: "./app"
+          projectBaseDir: "."
           projectVersion: "0.0.1"
           binding: true
           extra_sonar_args: |
