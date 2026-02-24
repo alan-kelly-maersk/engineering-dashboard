@@ -14,13 +14,12 @@ import (
 	"github.com/maersk/engineering-dashboard/models"
 )
 
-const (
-	baseURL = "https://api.github.com"
-)
+const defaultBaseURL = "https://api.github.com"
 
 type Client struct {
 	httpClient *http.Client
 	token      string
+	baseURL    string
 }
 
 func NewClient(token string) *Client {
@@ -28,7 +27,18 @@ func NewClient(token string) *Client {
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		token: token,
+		token:   token,
+		baseURL: defaultBaseURL,
+	}
+}
+
+func NewClientWithBaseURL(token, baseURL string) *Client {
+	return &Client{
+		httpClient: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+		token:   token,
+		baseURL: baseURL,
 	}
 }
 
@@ -61,7 +71,7 @@ func (c *Client) doRequest(url string, result interface{}) error {
 }
 
 func (c *Client) GetDependabotAlerts(owner, repo string) ([]models.DependabotAlert, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/dependabot/alerts?state=open&per_page=100", baseURL, owner, repo)
+	url := fmt.Sprintf("%s/repos/%s/%s/dependabot/alerts?state=open&per_page=100", c.baseURL, owner, repo)
 	var alerts []models.DependabotAlert
 	if err := c.doRequest(url, &alerts); err != nil {
 		return nil, err
@@ -70,7 +80,7 @@ func (c *Client) GetDependabotAlerts(owner, repo string) ([]models.DependabotAle
 }
 
 func (c *Client) GetCodeScanningAlerts(owner, repo string) ([]models.CodeScanningAlert, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/code-scanning/alerts?state=open&per_page=100", baseURL, owner, repo)
+	url := fmt.Sprintf("%s/repos/%s/%s/code-scanning/alerts?state=open&per_page=100", c.baseURL, owner, repo)
 	var alerts []models.CodeScanningAlert
 	if err := c.doRequest(url, &alerts); err != nil {
 		return nil, err
@@ -79,7 +89,7 @@ func (c *Client) GetCodeScanningAlerts(owner, repo string) ([]models.CodeScannin
 }
 
 func (c *Client) GetSecretScanningAlerts(owner, repo string) ([]models.SecretScanningAlert, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/secret-scanning/alerts?state=open&per_page=100", baseURL, owner, repo)
+	url := fmt.Sprintf("%s/repos/%s/%s/secret-scanning/alerts?state=open&per_page=100", c.baseURL, owner, repo)
 	var alerts []models.SecretScanningAlert
 	if err := c.doRequest(url, &alerts); err != nil {
 		return nil, err
@@ -96,7 +106,7 @@ type FileContent struct {
 
 // GetFileContent fetches a file's content from a repository
 func (c *Client) GetFileContent(owner, repo, path string) (string, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/contents/%s", baseURL, owner, repo, path)
+	url := fmt.Sprintf("%s/repos/%s/%s/contents/%s", c.baseURL, owner, repo, path)
 
 	var fileContent FileContent
 	if err := c.doRequest(url, &fileContent); err != nil {
@@ -139,7 +149,7 @@ type TreeItem struct {
 // GetRepoLanguages returns the languages used in a repository
 // Returns a map of language name to bytes of code
 func (c *Client) GetRepoLanguages(owner, repo string) (map[string]int, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/languages", baseURL, owner, repo)
+	url := fmt.Sprintf("%s/repos/%s/%s/languages", c.baseURL, owner, repo)
 	var languages map[string]int
 	if err := c.doRequest(url, &languages); err != nil {
 		return nil, err
@@ -159,7 +169,7 @@ func (c *Client) IsGoRepo(owner, repo string) (bool, error) {
 
 // GetRepoInfo fetches basic repository information
 func (c *Client) GetRepoInfo(owner, repo string) (*RepoInfo, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s", baseURL, owner, repo)
+	url := fmt.Sprintf("%s/repos/%s/%s", c.baseURL, owner, repo)
 	var info RepoInfo
 	if err := c.doRequest(url, &info); err != nil {
 		return nil, err
@@ -176,7 +186,7 @@ func (c *Client) FindGoModFiles(owner, repo string) ([]string, error) {
 	}
 
 	// Get the full tree recursively
-	url := fmt.Sprintf("%s/repos/%s/%s/git/trees/%s?recursive=1", baseURL, owner, repo, repoInfo.DefaultBranch)
+	url := fmt.Sprintf("%s/repos/%s/%s/git/trees/%s?recursive=1", c.baseURL, owner, repo, repoInfo.DefaultBranch)
 	var tree TreeResponse
 	if err := c.doRequest(url, &tree); err != nil {
 		return nil, fmt.Errorf("failed to get repo tree: %w", err)

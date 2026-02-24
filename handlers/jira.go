@@ -10,9 +10,6 @@ import (
 	"github.com/maersk/engineering-dashboard/models"
 )
 
-const ContentTypeHeader = "Content-Type"
-const ApplicationJSON = "application/json"
-
 // APIJiraEnabled returns whether Jira integration is configured
 func (h *Handler) APIJiraEnabled(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(ContentTypeHeader, ApplicationJSON)

@@ -724,7 +724,7 @@
                         <circle cx="12" cy="7" r="4"/>
                     </svg>
                     <span title="{{.UserEmail}}">{{.UserName}}</span>
-                    <a href="/auth/logout" style="color: #8b949e; text-decoration: none; margin-left: 0.25rem; padding: 0.25rem 0.5rem; border: 1px solid #30363d; border-radius: 6px; font-size: 0.75rem;" onmouseover="this.style.borderColor='#8b949e'" onmouseout="this.style.borderColor='#30363d'">Sign out</a>
+                    <a href="/auth/logout" style="color: #8b949e; text-decoration: none; margin-left: 0.25rem; padding: 0.25rem 0.5rem; border: 1px solid #30363d; border-radius: 6px; font-size: 0.75rem;" onfocus="this.style.borderColor='#8b949e'" onmouseover="this.style.borderColor='#8b949e'" onblur="this.style.borderColor='#30363d'" onmouseout="this.style.borderColor='#30363d'">Sign out</a>
                 </div>
                 {{end}}
                 <button class="refresh-btn" onclick="location.reload()">Refresh</button>
@@ -854,7 +854,7 @@
                     <div class="alert-list">
                         {{if .DependabotAlerts}}
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                            <div class="collapsible-header" onclick="toggleCollapsible(this)" onkeypress="toggleCollapsible(this)">
                                 Dependabot Alerts ({{len .DependabotAlerts}})
                             </div>
                             {{if $.JiraEnabled}}
@@ -879,7 +879,7 @@
 
                         {{if .CodeScanningAlerts}}
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                            <div class="collapsible-header" onclick="toggleCollapsible(this)" onkeypress="toggleCollapsible(this)">
                                 Code Scanning Alerts ({{len .CodeScanningAlerts}})
                             </div>
                             {{if $.JiraEnabled}}
@@ -904,7 +904,7 @@
 
                         {{if .SecretScanningAlerts}}
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                            <div class="collapsible-header" onclick="toggleCollapsible(this)" onkeypress="toggleCollapsible(this)">
                                 Secret Scanning Alerts ({{len .SecretScanningAlerts}})
                             </div>
                             {{if $.JiraEnabled}}
@@ -1059,7 +1059,7 @@
                         {{if .Dependencies}}
                         <div class="alert-list" style="margin-top: 0.75rem; padding-top: 0.75rem;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                                <div class="collapsible-header" onclick="toggleCollapsible(this)" onkeypress="toggleCollapsible(this)">
                                     Dependencies ({{.TotalDeps}}){{if gt .OutdatedDeps 0}} - <span style="color: #d29922;">{{.OutdatedDeps}} outdated</span>{{end}}
                                 </div>
                                 {{if and (gt .OutdatedDeps 0) $.JiraEnabled}}

@@ -107,7 +107,7 @@ func (h *Handler) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 				Path:     "/",
 				MaxAge:   300,
 				HttpOnly: true,
-				Secure:   strings.HasPrefix(h.oauthConfig.RedirectURL, "https"),
+				Secure:   true,
 				SameSite: http.SameSiteLaxMode,
 			})
 			http.Redirect(w, r, "/auth/login", http.StatusFound)
@@ -138,7 +138,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   300,
 		HttpOnly: true,
-		Secure:   strings.HasPrefix(h.oauthConfig.RedirectURL, "https"),
+		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	})
 
@@ -162,11 +162,12 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	// Clear the state cookie
 	http.SetCookie(w, &http.Cookie{
-		Name:   "oauth_state",
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1,
-		Secure: strings.HasPrefix(h.oauthConfig.RedirectURL, "https"),
+		HttpOnly: true,
+		Name:     "oauth_state",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		Secure:   true,
 	})
 
 	// Check for errors from Azure AD (e.g. user denied consent)
@@ -212,11 +213,12 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	if cookie, err := r.Cookie("auth_redirect"); err == nil && cookie.Value != "" {
 		redirectURL = cookie.Value
 		http.SetCookie(w, &http.Cookie{
-			Name:   "auth_redirect",
-			Value:  "",
-			Path:   "/",
-			MaxAge: -1,
-			Secure: strings.HasPrefix(h.oauthConfig.RedirectURL, "https"),
+			HttpOnly: true,
+			Name:     "auth_redirect",
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1,
+			Secure:   true,
 		})
 	}
 
@@ -242,7 +244,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   strings.HasPrefix(h.oauthConfig.RedirectURL, "https"),
+		Secure:   true,
 	})
 
 	if h.enabled {
@@ -277,8 +279,6 @@ func (h *Handler) createSession(w http.ResponseWriter, user *UserInfo) error {
 		return fmt.Errorf("signing session token: %w", err)
 	}
 
-	secure := strings.HasPrefix(h.oauthConfig.RedirectURL, "https")
-
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session",
 		Value:    tokenString,
@@ -286,7 +286,7 @@ func (h *Handler) createSession(w http.ResponseWriter, user *UserInfo) error {
 		MaxAge:   28800, // 8 hours
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   secure,
+		Secure:   true,
 	})
 
 	return nil
