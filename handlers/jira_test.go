@@ -24,7 +24,9 @@ func TestAPIJiraEnabled_NilClient(t *testing.T) {
 	}
 
 	var result map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&result)
+	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
 	if result["enabled"] != false {
 		t.Errorf("enabled = %v, want false", result["enabled"])
 	}
@@ -44,7 +46,9 @@ func TestAPIJiraEnabled_Configured(t *testing.T) {
 	}
 
 	var result map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&result)
+	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
 	if result["enabled"] != true {
 		t.Errorf("enabled = %v, want true", result["enabled"])
 	}
@@ -71,7 +75,7 @@ func TestAPIJiraEpics_NotConfigured(t *testing.T) {
 func TestAPIJiraEpics_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"issues": []map[string]interface{}{
 				{"key": "PROJ-1", "fields": map[string]string{"summary": "Epic 1"}},
 				{"key": "PROJ-2", "fields": map[string]string{"summary": "Epic 2"}},
@@ -93,7 +97,9 @@ func TestAPIJiraEpics_Success(t *testing.T) {
 	}
 
 	var epics []models.JiraEpic
-	json.NewDecoder(w.Body).Decode(&epics)
+	if err := json.NewDecoder(w.Body).Decode(&epics); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
 	if len(epics) != 2 {
 		t.Errorf("got %d epics, want 2", len(epics))
 	}
@@ -102,7 +108,7 @@ func TestAPIJiraEpics_Success(t *testing.T) {
 func TestAPIJiraEpics_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("error"))
+		_, _ = w.Write([]byte("error"))
 	}))
 	defer server.Close()
 
@@ -160,7 +166,7 @@ func TestAPIJiraCreateTicket_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
+		_ = json.NewEncoder(w).Encode(map[string]string{
 			"id":   "123",
 			"key":  "PROJ-42",
 			"self": "http://api/issue/123",
@@ -187,7 +193,7 @@ func TestAPIJiraCreateTicket_Success(t *testing.T) {
 	// but the handler code before the API call is still exercised
 	if w.Code == http.StatusCreated {
 		var result models.JiraTicketResponse
-		json.NewDecoder(w.Body).Decode(&result)
+		_ = json.NewDecoder(w.Body).Decode(&result)
 		if result.Key != "PROJ-42" {
 			t.Errorf("Key = %q", result.Key)
 		}

@@ -496,7 +496,7 @@ func TestCallback_CodeExchangeError(t *testing.T) {
 	// Mock token endpoint that returns an error
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"invalid_grant"}`))
+		_, _ = w.Write([]byte(`{"error":"invalid_grant"}`))
 	}))
 	defer tokenServer.Close()
 
@@ -538,7 +538,7 @@ func TestCallback_SuccessFlow(t *testing.T) {
 
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"access_token": "fake-access-token",
 			"token_type":   "Bearer",
 			"expires_in":   3600,
@@ -598,7 +598,7 @@ func TestCallback_WithRedirectCookie(t *testing.T) {
 
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"access_token": "token",
 			"token_type":   "Bearer",
 			"expires_in":   3600,
@@ -633,7 +633,7 @@ func TestCallback_WithRedirectCookie(t *testing.T) {
 func TestCallback_NoIDToken(t *testing.T) {
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"access_token": "token",
 			"token_type":   "Bearer",
 			"expires_in":   3600,
@@ -667,7 +667,7 @@ func TestCallback_NoIDToken(t *testing.T) {
 func TestCallback_InvalidIDToken(t *testing.T) {
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"access_token": "token",
 			"token_type":   "Bearer",
 			"expires_in":   3600,

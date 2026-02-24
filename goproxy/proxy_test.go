@@ -57,7 +57,7 @@ func TestEscapeModulePath(t *testing.T) {
 func TestGetLatestVersion_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(VersionInfo{Version: "v1.2.3"})
+		_ = json.NewEncoder(w).Encode(VersionInfo{Version: "v1.2.3"})
 	}))
 	defer server.Close()
 
@@ -76,7 +76,7 @@ func TestGetLatestVersion_Cached(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(VersionInfo{Version: "v1.0.0"})
+		_ = json.NewEncoder(w).Encode(VersionInfo{Version: "v1.0.0"})
 	}))
 	defer server.Close()
 
@@ -111,7 +111,7 @@ func TestGetLatestVersion_NotFound(t *testing.T) {
 func TestGetLatestVersion_ServerError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("internal error"))
+		_, _ = w.Write([]byte("internal error"))
 	}))
 	defer server.Close()
 
@@ -125,7 +125,7 @@ func TestGetLatestVersion_ServerError(t *testing.T) {
 func TestGetLatestVersion_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte("not json"))
+		_, _ = w.Write([]byte("not json"))
 	}))
 	defer server.Close()
 
@@ -143,7 +143,7 @@ func TestGetLatestGoVersion_Success(t *testing.T) {
 			{Version: "go1.25.6", Stable: true},
 			{Version: "go1.26rc1", Stable: false},
 		}
-		json.NewEncoder(w).Encode(releases)
+		_ = json.NewEncoder(w).Encode(releases)
 	}))
 	defer server.Close()
 
@@ -162,13 +162,13 @@ func TestGetLatestGoVersion_Cached(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]GoRelease{{Version: "go1.25", Stable: true}})
+		_ = json.NewEncoder(w).Encode([]GoRelease{{Version: "go1.25", Stable: true}})
 	}))
 	defer server.Close()
 
 	c := NewClientWithURLs("", server.URL)
-	c.GetLatestGoVersion()
-	c.GetLatestGoVersion()
+	_, _ = c.GetLatestGoVersion()
+	_, _ = c.GetLatestGoVersion()
 
 	if callCount != 1 {
 		t.Errorf("expected 1 HTTP call (cached), got %d", callCount)
@@ -178,7 +178,7 @@ func TestGetLatestGoVersion_Cached(t *testing.T) {
 func TestGetLatestGoVersion_NoStableRelease(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]GoRelease{{Version: "go1.26rc1", Stable: false}})
+		_ = json.NewEncoder(w).Encode([]GoRelease{{Version: "go1.26rc1", Stable: false}})
 	}))
 	defer server.Close()
 
@@ -204,7 +204,7 @@ func TestGetLatestGoVersion_ServerError(t *testing.T) {
 
 func TestGetLatestGoVersion_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("not json"))
+		_, _ = w.Write([]byte("not json"))
 	}))
 	defer server.Close()
 
@@ -218,7 +218,7 @@ func TestGetLatestGoVersion_InvalidJSON(t *testing.T) {
 func TestGetLatestVersions(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(VersionInfo{Version: "v1.0.0"})
+		_ = json.NewEncoder(w).Encode(VersionInfo{Version: "v1.0.0"})
 	}))
 	defer server.Close()
 

@@ -47,7 +47,7 @@ func TestDoRequest_Success(t *testing.T) {
 			t.Error("missing Accept header")
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"key": "value"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"key": "value"})
 	})
 
 	server, client := newTestServer(mux)
@@ -66,7 +66,7 @@ func TestDoRequest_Success(t *testing.T) {
 func TestDoRequest_ServerError(t *testing.T) {
 	server, client := newTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("forbidden"))
+		_, _ = w.Write([]byte("forbidden"))
 	}))
 	defer server.Close()
 
@@ -85,7 +85,7 @@ func TestGetDependabotAlerts(t *testing.T) {
 			{Number: 1, State: "open", Severity: "high"},
 			{Number: 2, State: "open", Severity: "critical"},
 		}
-		json.NewEncoder(w).Encode(alerts)
+		_ = json.NewEncoder(w).Encode(alerts)
 	})
 
 	server, client := newTestServer(mux)
@@ -103,7 +103,7 @@ func TestGetDependabotAlerts(t *testing.T) {
 func TestGetDependabotAlerts_Error(t *testing.T) {
 	server, client := newTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("not found"))
+		_, _ = w.Write([]byte("not found"))
 	}))
 	defer server.Close()
 
@@ -117,7 +117,7 @@ func TestGetCodeScanningAlerts(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/org/repo/code-scanning/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]models.CodeScanningAlert{{Number: 1, State: "open"}})
+		_ = json.NewEncoder(w).Encode([]models.CodeScanningAlert{{Number: 1, State: "open"}})
 	})
 
 	server, client := newTestServer(mux)
@@ -135,7 +135,7 @@ func TestGetCodeScanningAlerts(t *testing.T) {
 func TestGetCodeScanningAlerts_Error(t *testing.T) {
 	server, client := newTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("error"))
+		_, _ = w.Write([]byte("error"))
 	}))
 	defer server.Close()
 
@@ -149,7 +149,7 @@ func TestGetSecretScanningAlerts(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/org/repo/secret-scanning/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]models.SecretScanningAlert{{Number: 1, State: "open"}})
+		_ = json.NewEncoder(w).Encode([]models.SecretScanningAlert{{Number: 1, State: "open"}})
 	})
 
 	server, client := newTestServer(mux)
@@ -167,7 +167,7 @@ func TestGetSecretScanningAlerts(t *testing.T) {
 func TestGetSecretScanningAlerts_Error(t *testing.T) {
 	server, client := newTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("forbidden"))
+		_, _ = w.Write([]byte("forbidden"))
 	}))
 	defer server.Close()
 
@@ -184,7 +184,7 @@ func TestGetFileContent(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/org/repo/contents/go.mod", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(FileContent{
+		_ = json.NewEncoder(w).Encode(FileContent{
 			Content:  encoded,
 			Encoding: "base64",
 			SHA:      "abc123",
@@ -207,7 +207,7 @@ func TestGetFileContent_UnexpectedEncoding(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/org/repo/contents/file.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(FileContent{Content: "data", Encoding: "utf-8"})
+		_ = json.NewEncoder(w).Encode(FileContent{Content: "data", Encoding: "utf-8"})
 	})
 
 	server, client := newTestServer(mux)
@@ -222,7 +222,7 @@ func TestGetFileContent_UnexpectedEncoding(t *testing.T) {
 func TestGetFileContent_Error(t *testing.T) {
 	server, client := newTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("not found"))
+		_, _ = w.Write([]byte("not found"))
 	}))
 	defer server.Close()
 
@@ -236,7 +236,7 @@ func TestGetRepoLanguages(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/org/repo/languages", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]int{"Go": 50000, "Shell": 1000})
+		_ = json.NewEncoder(w).Encode(map[string]int{"Go": 50000, "Shell": 1000})
 	})
 
 	server, client := newTestServer(mux)
@@ -255,11 +255,11 @@ func TestIsGoRepo(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/org/gorepo/languages", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]int{"Go": 50000})
+		_ = json.NewEncoder(w).Encode(map[string]int{"Go": 50000})
 	})
 	mux.HandleFunc("/repos/org/jsrepo/languages", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]int{"JavaScript": 30000})
+		_ = json.NewEncoder(w).Encode(map[string]int{"JavaScript": 30000})
 	})
 
 	server, client := newTestServer(mux)
@@ -286,7 +286,7 @@ func TestGetRepoInfo(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/org/repo", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(RepoInfo{DefaultBranch: "main"})
+		_ = json.NewEncoder(w).Encode(RepoInfo{DefaultBranch: "main"})
 	})
 
 	server, client := newTestServer(mux)
@@ -307,12 +307,12 @@ func TestFindGoModFiles(t *testing.T) {
 		// Distinguish between repo info and tree requests
 		if r.URL.Path == "/repos/org/repo" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(RepoInfo{DefaultBranch: "main"})
+			_ = json.NewEncoder(w).Encode(RepoInfo{DefaultBranch: "main"})
 		}
 	})
 	mux.HandleFunc("/repos/org/repo/git/trees/main", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(TreeResponse{
+		_ = json.NewEncoder(w).Encode(TreeResponse{
 			SHA: "abc",
 			Tree: []TreeItem{
 				{Path: "go.mod", Type: "blob"},
@@ -344,23 +344,23 @@ func TestGetAllGoModFiles(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/org/repo/languages", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]int{"Go": 50000})
+		_ = json.NewEncoder(w).Encode(map[string]int{"Go": 50000})
 	})
 	mux.HandleFunc("/repos/org/repo", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/org/repo" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(RepoInfo{DefaultBranch: "main"})
+			_ = json.NewEncoder(w).Encode(RepoInfo{DefaultBranch: "main"})
 		}
 	})
 	mux.HandleFunc("/repos/org/repo/git/trees/main", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(TreeResponse{
+		_ = json.NewEncoder(w).Encode(TreeResponse{
 			Tree: []TreeItem{{Path: "go.mod", Type: "blob"}},
 		})
 	})
 	mux.HandleFunc("/repos/org/repo/contents/go.mod", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(FileContent{Content: content, Encoding: "base64"})
+		_ = json.NewEncoder(w).Encode(FileContent{Content: content, Encoding: "base64"})
 	})
 
 	server, client := newTestServer(mux)
@@ -382,7 +382,7 @@ func TestGetAllGoModFiles_NotGoRepo(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/org/repo/languages", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]int{"Python": 50000})
+		_ = json.NewEncoder(w).Encode(map[string]int{"Python": 50000})
 	})
 
 	server, client := newTestServer(mux)
@@ -401,15 +401,15 @@ func TestGetRepoSecuritySummary(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/org/repo/dependabot/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]models.DependabotAlert{{Number: 1, State: "open"}})
+		_ = json.NewEncoder(w).Encode([]models.DependabotAlert{{Number: 1, State: "open"}})
 	})
 	mux.HandleFunc("/repos/org/repo/code-scanning/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]models.CodeScanningAlert{{Number: 1, State: "open"}})
+		_ = json.NewEncoder(w).Encode([]models.CodeScanningAlert{{Number: 1, State: "open"}})
 	})
 	mux.HandleFunc("/repos/org/repo/secret-scanning/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]models.SecretScanningAlert{})
+		_ = json.NewEncoder(w).Encode([]models.SecretScanningAlert{})
 	})
 
 	server, client := newTestServer(mux)
@@ -440,7 +440,7 @@ func TestGetRepoSecuritySummary(t *testing.T) {
 func TestGetRepoSecuritySummary_WithErrors(t *testing.T) {
 	server, client := newTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("forbidden"))
+		_, _ = w.Write([]byte("forbidden"))
 	}))
 	defer server.Close()
 
@@ -454,32 +454,32 @@ func TestGetDashboardMetrics(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/org/repo1/dependabot/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]models.DependabotAlert{
+		_ = json.NewEncoder(w).Encode([]models.DependabotAlert{
 			{Number: 1, SecurityAdvisory: models.Advisory{Severity: "high"}},
 			{Number: 2, SecurityAdvisory: models.Advisory{Severity: "critical"}},
 		})
 	})
 	mux.HandleFunc("/repos/org/repo1/code-scanning/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]models.CodeScanningAlert{
+		_ = json.NewEncoder(w).Encode([]models.CodeScanningAlert{
 			{Number: 1, Rule: models.Rule{SecuritySeverityLevel: "high"}},
 		})
 	})
 	mux.HandleFunc("/repos/org/repo1/secret-scanning/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]models.SecretScanningAlert{})
+		_ = json.NewEncoder(w).Encode([]models.SecretScanningAlert{})
 	})
 	mux.HandleFunc("/repos/org/repo2/dependabot/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]models.DependabotAlert{})
+		_ = json.NewEncoder(w).Encode([]models.DependabotAlert{})
 	})
 	mux.HandleFunc("/repos/org/repo2/code-scanning/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]models.CodeScanningAlert{})
+		_ = json.NewEncoder(w).Encode([]models.CodeScanningAlert{})
 	})
 	mux.HandleFunc("/repos/org/repo2/secret-scanning/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]models.SecretScanningAlert{{Number: 1, State: "open"}})
+		_ = json.NewEncoder(w).Encode([]models.SecretScanningAlert{{Number: 1, State: "open"}})
 	})
 
 	server, client := newTestServer(mux)
@@ -519,21 +519,21 @@ func TestGetDashboardMetrics_FallbackSeverity(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/org/repo/dependabot/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]models.DependabotAlert{
+		_ = json.NewEncoder(w).Encode([]models.DependabotAlert{
 			{Number: 1, SecurityVuln: models.Vuln{Severity: "medium"}},
 			{Number: 2}, // no severity at all
 		})
 	})
 	mux.HandleFunc("/repos/org/repo/code-scanning/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]models.CodeScanningAlert{
+		_ = json.NewEncoder(w).Encode([]models.CodeScanningAlert{
 			{Number: 1, Rule: models.Rule{Severity: "warning"}},
 			{Number: 2}, // no severity
 		})
 	})
 	mux.HandleFunc("/repos/org/repo/secret-scanning/alerts", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]models.SecretScanningAlert{})
+		_ = json.NewEncoder(w).Encode([]models.SecretScanningAlert{})
 	})
 
 	server, client := newTestServer(mux)

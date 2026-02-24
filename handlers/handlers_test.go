@@ -26,23 +26,23 @@ func setupMockGitHubServer() *httptest.Server {
 
 		switch {
 		case contains(path, "/dependabot/alerts"):
-			json.NewEncoder(w).Encode([]models.DependabotAlert{})
+			_ = json.NewEncoder(w).Encode([]models.DependabotAlert{})
 		case contains(path, "/code-scanning/alerts"):
-			json.NewEncoder(w).Encode([]models.CodeScanningAlert{})
+			_ = json.NewEncoder(w).Encode([]models.CodeScanningAlert{})
 		case contains(path, "/secret-scanning/alerts"):
-			json.NewEncoder(w).Encode([]models.SecretScanningAlert{})
+			_ = json.NewEncoder(w).Encode([]models.SecretScanningAlert{})
 		case contains(path, "/languages"):
-			json.NewEncoder(w).Encode(map[string]int{"Go": 50000})
+			_ = json.NewEncoder(w).Encode(map[string]int{"Go": 50000})
 		case contains(path, "/git/trees/"):
-			json.NewEncoder(w).Encode(github.TreeResponse{
+			_ = json.NewEncoder(w).Encode(github.TreeResponse{
 				Tree: []github.TreeItem{{Path: "go.mod", Type: "blob"}},
 			})
 		case contains(path, "/contents/go.mod"):
 			content := base64.StdEncoding.EncodeToString([]byte("module example.com\n\ngo 1.25\n\nrequire github.com/pkg/errors v0.9.1\n"))
-			json.NewEncoder(w).Encode(github.FileContent{Content: content, Encoding: "base64"})
+			_ = json.NewEncoder(w).Encode(github.FileContent{Content: content, Encoding: "base64"})
 		default:
 			// Repo info
-			json.NewEncoder(w).Encode(github.RepoInfo{DefaultBranch: "main"})
+			_ = json.NewEncoder(w).Encode(github.RepoInfo{DefaultBranch: "main"})
 		}
 	})
 
@@ -53,7 +53,7 @@ func setupMockSonarQubeServer() *httptest.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/measures/component", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"component": map[string]interface{}{
 				"key":  "test-project",
 				"name": "Test Project",
@@ -67,13 +67,13 @@ func setupMockSonarQubeServer() *httptest.Server {
 	})
 	mux.HandleFunc("/api/qualitygates/project_status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"projectStatus": map[string]string{"status": "OK"},
 		})
 	})
 	mux.HandleFunc("/api/project_analyses/search", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"analyses": []map[string]string{{"key": "a1", "date": "2024-01-01"}},
 		})
 	})
@@ -87,13 +87,13 @@ func setupMockProxyServer() *httptest.Server {
 		w.Header().Set("Content-Type", "application/json")
 		if r.URL.RawQuery != "" {
 			// Go version endpoint
-			json.NewEncoder(w).Encode([]map[string]interface{}{
+			_ = json.NewEncoder(w).Encode([]map[string]interface{}{
 				{"version": "go1.25.6", "stable": true},
 			})
 			return
 		}
 		// Module version endpoint
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"Version": "v0.9.1",
 		})
 	})
@@ -158,7 +158,9 @@ func TestHealth(t *testing.T) {
 	}
 
 	var result map[string]string
-	json.NewDecoder(w.Body).Decode(&result)
+	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
 	if result["status"] != "ok" {
 		t.Errorf("status = %q", result["status"])
 	}
@@ -557,7 +559,7 @@ func TestGetRepoDependencySummary_NotGoRepo(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/org/jsrepo/languages", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]int{"JavaScript": 50000})
+		_ = json.NewEncoder(w).Encode(map[string]int{"JavaScript": 50000})
 	})
 	ghServer := httptest.NewServer(mux)
 	defer ghServer.Close()

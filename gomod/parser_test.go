@@ -283,17 +283,17 @@ func TestCheckForUpdates(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/github.com/pkg/errors/@latest", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"Version":"v0.10.0","Time":"2024-01-01T00:00:00Z"}`))
+		_, _ = w.Write([]byte(`{"Version":"v0.10.0","Time":"2024-01-01T00:00:00Z"}`))
 	})
 	mux.HandleFunc("/golang.org/x/text/@latest", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"Version":"v0.15.0","Time":"2024-01-01T00:00:00Z"}`))
+		_, _ = w.Write([]byte(`{"Version":"v0.15.0","Time":"2024-01-01T00:00:00Z"}`))
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Go version endpoint
 		if r.URL.Path == "/" && r.URL.RawQuery != "" {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`[{"version":"go1.25.6","stable":true}]`))
+			_, _ = w.Write([]byte(`[{"version":"go1.25.6","stable":true}]`))
 			return
 		}
 		http.NotFound(w, r)

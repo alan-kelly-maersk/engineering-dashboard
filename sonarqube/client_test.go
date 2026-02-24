@@ -108,11 +108,11 @@ func TestGetProjectMetrics_Success(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	mux.HandleFunc("/api/qualitygates/project_status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(projectStatusResponse{
+		_ = json.NewEncoder(w).Encode(projectStatusResponse{
 			ProjectStatus: struct {
 				Status string `json:"status"`
 			}{Status: "OK"},
@@ -120,7 +120,7 @@ func TestGetProjectMetrics_Success(t *testing.T) {
 	})
 	mux.HandleFunc("/api/project_analyses/search", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(analysisResponse{
+		_ = json.NewEncoder(w).Encode(analysisResponse{
 			Analyses: []struct {
 				Key  string `json:"key"`
 				Date string `json:"date"`
@@ -207,7 +207,7 @@ func TestGetProjectMetrics_ServerError(t *testing.T) {
 func TestGetProjectMetrics_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte("not json"))
+		_, _ = w.Write([]byte("not json"))
 	}))
 	defer server.Close()
 
@@ -225,7 +225,7 @@ func TestGetProjectMetrics_EmptyProjectName(t *testing.T) {
 		resp.Component.Key = "my-project"
 		resp.Component.Name = "" // empty name
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	mux.HandleFunc("/api/qualitygates/project_status", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -250,7 +250,7 @@ func TestFetchQualityGateStatus_Error(t *testing.T) {
 			resp := measuresResponse{}
 			resp.Component.Name = "test"
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
@@ -270,15 +270,15 @@ func TestFetchLastAnalysis_NoAnalyses(t *testing.T) {
 		resp := measuresResponse{}
 		resp.Component.Name = "test"
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	mux.HandleFunc("/api/qualitygates/project_status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(projectStatusResponse{})
+		_ = json.NewEncoder(w).Encode(projectStatusResponse{})
 	})
 	mux.HandleFunc("/api/project_analyses/search", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(analysisResponse{Analyses: nil})
+		_ = json.NewEncoder(w).Encode(analysisResponse{Analyses: nil})
 	})
 
 	server := httptest.NewServer(mux)
@@ -312,5 +312,5 @@ func TestDoRequest_SetsBasicAuth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doRequest() error = %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }

@@ -93,7 +93,7 @@ func TestGetEpics_Success(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(jiraSearchResponse{
+		_ = json.NewEncoder(w).Encode(jiraSearchResponse{
 			Issues: []struct {
 				Key    string `json:"key"`
 				Fields struct {
@@ -128,7 +128,7 @@ func TestGetEpics_Success(t *testing.T) {
 func TestGetEpics_ServerError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("error"))
+		_, _ = w.Write([]byte("error"))
 	}))
 	defer server.Close()
 
@@ -158,7 +158,9 @@ func TestCreateStory_Success(t *testing.T) {
 
 		body, _ := io.ReadAll(r.Body)
 		var reqBody map[string]interface{}
-		json.Unmarshal(body, &reqBody)
+		if err := json.Unmarshal(body, &reqBody); err != nil {
+			t.Fatalf("failed to unmarshal request body: %v", err)
+		}
 
 		fields, ok := reqBody["fields"].(map[string]interface{})
 		if !ok {
@@ -170,7 +172,7 @@ func TestCreateStory_Success(t *testing.T) {
 
 		w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(jiraCreateResponse{
+		_ = json.NewEncoder(w).Encode(jiraCreateResponse{
 			ID:   "12345",
 			Key:  "PROJ-42",
 			Self: "http://api/issue/12345",
@@ -234,10 +236,10 @@ func TestCreateStory_WithDescription(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &capturedBody)
+		_ = json.Unmarshal(body, &capturedBody)
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(jiraCreateResponse{Key: "PROJ-1", ID: "1"})
+		_ = json.NewEncoder(w).Encode(jiraCreateResponse{Key: "PROJ-1", ID: "1"})
 	}))
 	defer server.Close()
 
@@ -252,19 +254,20 @@ func TestCreateStory_WithDescription(t *testing.T) {
 		httpClient:    &http.Client{},
 	}
 
-	c.CreateStory(CreateIssueRequest{
+	_, _ = c.CreateStory(CreateIssueRequest{
 		Summary:     "Test",
 		Description: "Some description",
 		EpicKey:     "PROJ-1",
 	})
-	// Test passes if no panic
 }
 
 func TestCreateStory_WithoutEpic(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var reqBody map[string]interface{}
-		json.Unmarshal(body, &reqBody)
+		if err := json.Unmarshal(body, &reqBody); err != nil {
+			t.Fatalf("failed to unmarshal request body: %v", err)
+		}
 
 		fields := reqBody["fields"].(map[string]interface{})
 		if _, hasEpic := fields["customfield_10002"]; hasEpic {
@@ -272,7 +275,7 @@ func TestCreateStory_WithoutEpic(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(jiraCreateResponse{Key: "PROJ-1", ID: "1"})
+		_ = json.NewEncoder(w).Encode(jiraCreateResponse{Key: "PROJ-1", ID: "1"})
 	}))
 	defer server.Close()
 
@@ -286,7 +289,7 @@ func TestCreateStory_WithoutEpic(t *testing.T) {
 		httpClient:    &http.Client{},
 	}
 
-	c.CreateStory(CreateIssueRequest{
+	_, _ = c.CreateStory(CreateIssueRequest{
 		Summary: "No Epic Story",
 	})
 }
@@ -294,7 +297,7 @@ func TestCreateStory_WithoutEpic(t *testing.T) {
 func TestCreateStory_APIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{"errors": "bad request"})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"errors": "bad request"})
 	}))
 	defer server.Close()
 
@@ -409,12 +412,12 @@ func TestDoRequest_SetsHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET error = %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// POST request
 	resp, err = c.doRequest("POST", server.URL+"/test", []byte(`{"key":"value"}`))
 	if err != nil {
 		t.Fatalf("POST error = %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
