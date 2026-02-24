@@ -55,9 +55,11 @@ jobs:
 
       - name: Terraform destroy
         working-directory: terraform
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
         run: |
           terraform destroy -auto-approve \
-            -var-file=environments/${{ inputs.environment }}.tfvars \
+            -var-file=environments/${ENVIRONMENT}.tfvars \
             -var="container_image=placeholder" \
             -var="github_token=${{ secrets.PAT_FOR_GITHUB }}" \
             -var="sonarqube_token=${{ secrets.SONARQUBE_TOKEN }}" \
