@@ -10,15 +10,13 @@ import (
 	"time"
 )
 
-const (
-	proxyURL   = "https://proxy.golang.org"
-	goDevURL   = "https://go.dev/dl/?mode=json"
-	maxWorkers = 10 // Limit concurrent requests to avoid rate limiting
-)
+const maxWorkers = 10
 
 // Client handles requests to the Go module proxy
 type Client struct {
 	httpClient *http.Client
+	proxyURL   string
+	goDevURL   string
 	cache      map[string]string
 	cacheMu    sync.RWMutex
 }
@@ -29,7 +27,21 @@ func NewClient() *Client {
 		httpClient: &http.Client{
 			Timeout: 15 * time.Second,
 		},
-		cache: make(map[string]string),
+		proxyURL: "https://proxy.golang.org",
+		goDevURL: "https://go.dev/dl/?mode=json",
+		cache:    make(map[string]string),
+	}
+}
+
+// NewClientWithURLs creates a client with custom proxy URLs (for testing)
+func NewClientWithURLs(proxyURL, goDevURL string) *Client {
+	return &Client{
+		httpClient: &http.Client{
+			Timeout: 15 * time.Second,
+		},
+		proxyURL: proxyURL,
+		goDevURL: goDevURL,
+		cache:    make(map[string]string),
 	}
 }
 
@@ -57,7 +69,7 @@ func (c *Client) GetLatestVersion(modulePath string) (string, error) {
 
 	// Escape the module path for URL
 	escapedPath := escapeModulePath(modulePath)
-	url := fmt.Sprintf("%s/%s/@latest", proxyURL, escapedPath)
+	url := fmt.Sprintf("%s/%s/@latest", c.proxyURL, escapedPath)
 
 	resp, err := c.httpClient.Get(url)
 	if err != nil {
@@ -101,7 +113,7 @@ func (c *Client) GetLatestGoVersion() (string, error) {
 	}
 	c.cacheMu.RUnlock()
 
-	resp, err := c.httpClient.Get(goDevURL)
+	resp, err := c.httpClient.Get(c.goDevURL)
 	if err != nil {
 		return "", err
 	}
