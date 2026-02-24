@@ -213,11 +213,12 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	if cookie, err := r.Cookie("auth_redirect"); err == nil && cookie.Value != "" {
 		redirectURL = cookie.Value
 		http.SetCookie(w, &http.Cookie{
-			Name:   "auth_redirect",
-			Value:  "",
-			Path:   "/",
-			MaxAge: -1,
-			Secure: true,
+			HttpOnly: true,
+			Name:     "auth_redirect",
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1,
+			Secure:   true,
 		})
 	}
 
