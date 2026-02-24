@@ -1,10 +1,5 @@
 FROM golang:1.25-alpine AS builder
 
-RUN addgroup -S nonroot \
-    && adduser -S nonroot -G nonroot
-
-USER nonroot
-
 WORKDIR /app
 
 COPY go.mod go.sum ./
@@ -14,6 +9,11 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o engineering-dashboard
 
 FROM alpine:3.20
+
+RUN addgroup -S nonroot \
+    && adduser -S nonroot -G nonroot
+
+USER nonroot
 
 RUN apk --no-cache add ca-certificates
 
