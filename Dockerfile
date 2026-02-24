@@ -1,5 +1,10 @@
 FROM golang:1.25-alpine AS builder
 
+RUN addgroup -S nonroot \
+    && adduser -S nonroot -G nonroot
+
+USER nonroot
+
 WORKDIR /app
 
 COPY go.mod go.sum ./
