@@ -119,9 +119,11 @@ jobs:
 
       - name: Run SonarQube scan
         uses: Maersk-Global/github-actions/SonarQube@main
+        env:
+          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
         with:
           host: ${{ vars.SONARQUBE_URL }}
-          login: ${{ secrets.MDN_SONARQUBE_TOKEN }}
+          login: ${{ env.SONARQUBE_TOKEN }}
           projectKey: "engineering-dashboard"
           projectName: "Engineering Dashboard"
           projectBaseDir: "."
@@ -232,19 +234,29 @@ jobs:
 
       - name: Terraform plan
         working-directory: terraform
+        env:
+          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+          SONARQUBE_URL: ${{ secrets.SONARQUBE_URL }}
+          PAT_FOR_GITHUB: ${{ secrets.PAT_FOR_GITHUB }}
+          ATLASSIAN_URL: ${{ secrets.ATLASSIAN_URL }}
+          ATLASSIAN_CLOUD_ID: ${{ secrets.ATLASSIAN_CLOUD_ID }}
+          ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
+          ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+          JIRA_EPIC_LINK_FIELD: ${{ secrets.JIRA_EPIC_LINK_FIELD }}
         run: |
           terraform plan \
             -var-file=environments/integration.tfvars \
             -var="container_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-build-push.outputs.image-tag }}" \
-            -var="github_token=${{ secrets.PAT_FOR_GITHUB }}" \
-            -var="sonarqube_token=${{ secrets.SONARQUBE_TOKEN }}" \
-            -var="sonarqube_url=${{ secrets.SONARQUBE_URL }}" \
-            -var="atlassian_url=${{ secrets.ATLASSIAN_URL }}" \
-            -var="atlassian_cloud_id=${{ secrets.ATLASSIAN_CLOUD_ID }}" \
-            -var="atlassian_email=${{ secrets.ATLASSIAN_EMAIL }}" \
-            -var="atlassian_api_token=${{ secrets.ATLASSIAN_API_TOKEN }}" \
-            -var="jira_project_key=${{ secrets.JIRA_PROJECT_KEY }}" \
-            -var="jira_epic_link_field=${{ secrets.JIRA_EPIC_LINK_FIELD }}" \
+            -var="github_token=${{ env.PAT_FOR_GITHUB }}" \
+            -var="sonarqube_token=${{ env.SONARQUBE_TOKEN }}" \
+            -var="sonarqube_url=${{ env.SONARQUBE_URL }}" \
+            -var="atlassian_url=${{ env.ATLASSIAN_URL }}" \
+            -var="atlassian_cloud_id=${{ env.ATLASSIAN_CLOUD_ID }}" \
+            -var="atlassian_email=${{ env.ATLASSIAN_EMAIL }}" \
+            -var="atlassian_api_token=${{ env.ATLASSIAN_API_TOKEN }}" \
+            -var="jira_project_key=${{ env.JIRA_PROJECT_KEY }}" \
+            -var="jira_epic_link_field=${{ env.JIRA_EPIC_LINK_FIELD }}" \
             -out=tfplan
 
       - name: Terraform apply
@@ -309,19 +321,29 @@ jobs:
 
       - name: Terraform plan
         working-directory: terraform
+        env:
+          PAT_FOR_GITHUB: ${{ secrets.PAT_FOR_GITHUB }}
+          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+          SONARQUBE_URL: ${{ secrets.SONARQUBE_URL }}
+          ATLASSIAN_URL: ${{ secrets.ATLASSIAN_URL }}
+          ATLASSIAN_CLOUD_ID: ${{ secrets.ATLASSIAN_CLOUD_ID }}
+          ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
+          ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+          JIRA_EPIC_LINK_FIELD: ${{ secrets.JIRA_EPIC_LINK_FIELD }}
         run: |
           terraform plan \
             -var-file=environments/production.tfvars \
             -var="container_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-build-push.outputs.image-tag }}" \
             -var="github_token=${{ secrets.PAT_FOR_GITHUB }}" \
-            -var="sonarqube_token=${{ secrets.SONARQUBE_TOKEN }}" \
-            -var="sonarqube_url=${{ secrets.SONARQUBE_URL }}" \
-            -var="atlassian_url=${{ secrets.ATLASSIAN_URL }}" \
-            -var="atlassian_cloud_id=${{ secrets.ATLASSIAN_CLOUD_ID }}" \
-            -var="atlassian_email=${{ secrets.ATLASSIAN_EMAIL }}" \
-            -var="atlassian_api_token=${{ secrets.ATLASSIAN_API_TOKEN }}" \
-            -var="jira_project_key=${{ secrets.JIRA_PROJECT_KEY }}" \
-            -var="jira_epic_link_field=${{ secrets.JIRA_EPIC_LINK_FIELD }}" \
+            -var="sonarqube_token=${{ env.SONARQUBE_TOKEN }}" \
+            -var="sonarqube_url=${{ env.SONARQUBE_URL }}" \
+            -var="atlassian_url=${{ env.ATLASSIAN_URL }}" \
+            -var="atlassian_cloud_id=${{ env.ATLASSIAN_CLOUD_ID }}" \
+            -var="atlassian_email=${{ env.ATLASSIAN_EMAIL }}" \
+            -var="atlassian_api_token=${{ env.ATLASSIAN_API_TOKEN }}" \
+            -var="jira_project_key=${{ env.JIRA_PROJECT_KEY }}" \
+            -var="jira_epic_link_field=${{ env.JIRA_EPIC_LINK_FIELD }}" \
             -out=tfplan
 
       - name: Terraform apply
