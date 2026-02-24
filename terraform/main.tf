@@ -41,6 +41,17 @@ resource "azurerm_container_app" "ca" {
   resource_group_name          = data.azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
+  registry {
+    server               = "ghcr.io"
+    username             = "ghcr-token"
+    password_secret_name = "github-token"
+  }
+
+  secret {
+    name  = "github-token"
+    value = var.github_token
+  }
+
   template {
     container {
       name   = "${local.prefix}-ca"
