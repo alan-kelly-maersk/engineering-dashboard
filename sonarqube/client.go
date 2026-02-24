@@ -131,7 +131,7 @@ func (c *Client) GetProjectMetrics(projectKey string) ProjectMetrics {
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			fmt.Println("Failed to close response body", err)
+			fmt.Println("Failed to close response body while getting project metrics", err)
 		}
 	}()
 	if resp.StatusCode == http.StatusNotFound {
@@ -251,7 +251,7 @@ func (c *Client) fetchLastAnalysis(metrics *ProjectMetrics, projectKey string) {
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			fmt.Println("Failed to close response body", err)
+			fmt.Println("Failed to close response body while fetching last analysis", err)
 		}
 	}()
 
