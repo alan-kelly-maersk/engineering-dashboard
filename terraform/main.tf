@@ -13,6 +13,7 @@ terraform {
     storage_account_name = "l7sedotfstate"
     container_name       = "tfstate"
     key                  = "engineering-dashboard.tfstate"
+    use_azuread_auth     = true
   }
 }
 
