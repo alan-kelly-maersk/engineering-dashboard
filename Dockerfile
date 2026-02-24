@@ -10,12 +10,11 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o engineering-dashboard
 
 FROM alpine:3.20
 
-RUN addgroup -S nonroot \
+RUN apk --no-cache add ca-certificates \
+    && addgroup -S nonroot \
     && adduser -S nonroot -G nonroot
 
 USER nonroot
-
-RUN apk --no-cache add ca-certificates
 
 WORKDIR /app
 
