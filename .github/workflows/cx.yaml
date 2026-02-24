@@ -14,7 +14,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: "maersk-global/engineering-dashboard"
   GO_VERSION: "1.25"
   TF_VERSION: "1.14.5"
 
