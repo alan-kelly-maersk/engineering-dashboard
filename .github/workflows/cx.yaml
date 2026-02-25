@@ -119,7 +119,7 @@ jobs:
           name: coverage-report
 
       - name: Run SonarQube scan
-        uses: ./SonarQube
+        uses: ./.github/actions/SonarQube
         env:
           MDN_SONARQUBE_TOKEN: ${{ secrets.MDN_SONARQUBE_TOKEN }}
         with:
