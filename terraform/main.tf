@@ -141,6 +141,7 @@ resource "azurerm_public_ip" "aks_ingress" {
   domain_name_label   = "l7sedoaks"
 
   tags = {
+    app_id      = "A22087"
     environment = "production"
   }
 }
@@ -155,6 +156,12 @@ resource "azurerm_kubernetes_cluster" "l7sedoaks" {
     name       = "default"
     node_count = 2
     vm_size    = "Standard_D2_v2"
+
+    upgrade_settings {
+      drain_timeout_in_minutes      = 0
+      max_surge                     = "10%"
+      node_soak_duration_in_minutes = 0
+    }
   }
 
   network_profile {
@@ -166,5 +173,9 @@ resource "azurerm_kubernetes_cluster" "l7sedoaks" {
 
   identity {
     type = "SystemAssigned"
+  }
+
+  tags = {
+    app_id = "A22087"
   }
 }
