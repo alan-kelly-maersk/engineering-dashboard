@@ -29,102 +29,142 @@ data "azurerm_resource_group" "rg" {
   name = "l7se-do"
 }
 
-resource "azurerm_container_app_environment" "cae" {
-  name                = "${local.prefix}-cae"
-  resource_group_name = data.azurerm_resource_group.rg.name
+
+
+# resource "azurerm_container_app_environment" "cae" {
+#   name                = "${local.prefix}-cae"
+#   resource_group_name = data.azurerm_resource_group.rg.name
+#   location            = data.azurerm_resource_group.rg.location
+# }
+
+# resource "azurerm_container_app" "ca" {
+#   name                         = "${local.prefix}-ca"
+#   container_app_environment_id = azurerm_container_app_environment.cae.id
+#   resource_group_name          = data.azurerm_resource_group.rg.name
+#   revision_mode                = "Single"
+
+#   registry {
+#     server               = "ghcr.io"
+#     username             = "ghcr-token"
+#     password_secret_name = "github-token"
+#   }
+
+#   secret {
+#     name  = "github-token"
+#     value = var.github_token
+#   }
+
+#   template {
+#     container {
+#       name   = "${local.prefix}-ca"
+#       image  = var.container_image
+#       cpu    = var.cpu
+#       memory = var.memory
+
+#       env {
+#         name  = "GITHUB_TOKEN"
+#         value = var.github_token
+#       }
+#       env {
+#         name  = "SONARQUBE_TOKEN"
+#         value = var.sonarqube_token
+#       }
+#       env {
+#         name  = "SONARQUBE_URL"
+#         value = var.sonarqube_url
+#       }
+#       env {
+#         name  = "ATLASSIAN_URL"
+#         value = var.atlassian_url
+#       }
+#       env {
+#         name  = "ATLASSIAN_CLOUD_ID"
+#         value = var.atlassian_cloud_id
+#       }
+#       env {
+#         name  = "ATLASSIAN_EMAIL"
+#         value = var.atlassian_email
+#       }
+#       env {
+#         name  = "ATLASSIAN_API_TOKEN"
+#         value = var.atlassian_api_token
+#       }
+#       env {
+#         name  = "JIRA_PROJECT_KEY"
+#         value = var.jira_project_key
+#       }
+#       env {
+#         name  = "JIRA_EPIC_LINK_FIELD"
+#         value = var.jira_epic_link_field
+#       }
+#       env {
+#         name  = "AZURE_CLIENT_ID"
+#         value = var.azure_client_id
+#       }
+#       env {
+#         name  = "AZURE_CLIENT_SECRET"
+#         value = var.azure_client_secret
+#       }
+#       env {
+#         name  = "AZURE_TENANT_ID"
+#         value = var.azure_tenant_id
+#       }
+#       env {
+#         name  = "AZURE_REDIRECT_URL"
+#         value = var.azure_redirect_url
+#       }
+#       env {
+#         name  = "SESSION_SECRET"
+#         value = var.session_secret
+#       }
+#     }
+#   }
+
+#   ingress {
+#     external_enabled = true
+#     target_port      = 8080
+
+#     traffic_weight {
+#       percentage      = 100
+#       latest_revision = true
+#     }
+#   }
+# }
+
+
+resource "azurerm_public_ip" "aks_ingress" {
+  name                = "aks-ingress-publicip"
   location            = data.azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  domain_name_label   = "l7sedoaks"
+  
+  tags = {
+    environment = "production"
+  }
 }
 
-resource "azurerm_container_app" "ca" {
-  name                         = "${local.prefix}-ca"
-  container_app_environment_id = azurerm_container_app_environment.cae.id
-  resource_group_name          = data.azurerm_resource_group.rg.name
-  revision_mode                = "Single"
+resource "azurerm_kubernetes_cluster" "l7sedoaks" {
+  name                = "l7sedoaks"
+  location            = data.azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
+  dns_prefix          = "l7sedoaks"
 
-  registry {
-    server               = "ghcr.io"
-    username             = "ghcr-token"
-    password_secret_name = "github-token"
+  default_node_pool {
+    name       = "default"
+    node_count = 2
+    vm_size    = "Standard_D2_v2"
   }
 
-  secret {
-    name  = "github-token"
-    value = var.github_token
-  }
-
-  template {
-    container {
-      name   = "${local.prefix}-ca"
-      image  = var.container_image
-      cpu    = var.cpu
-      memory = var.memory
-
-      env {
-        name  = "GITHUB_TOKEN"
-        value = var.github_token
-      }
-      env {
-        name  = "SONARQUBE_TOKEN"
-        value = var.sonarqube_token
-      }
-      env {
-        name  = "SONARQUBE_URL"
-        value = var.sonarqube_url
-      }
-      env {
-        name  = "ATLASSIAN_URL"
-        value = var.atlassian_url
-      }
-      env {
-        name  = "ATLASSIAN_CLOUD_ID"
-        value = var.atlassian_cloud_id
-      }
-      env {
-        name  = "ATLASSIAN_EMAIL"
-        value = var.atlassian_email
-      }
-      env {
-        name  = "ATLASSIAN_API_TOKEN"
-        value = var.atlassian_api_token
-      }
-      env {
-        name  = "JIRA_PROJECT_KEY"
-        value = var.jira_project_key
-      }
-      env {
-        name  = "JIRA_EPIC_LINK_FIELD"
-        value = var.jira_epic_link_field
-      }
-      env {
-        name  = "AZURE_CLIENT_ID"
-        value = var.azure_client_id
-      }
-      env {
-        name  = "AZURE_CLIENT_SECRET"
-        value = var.azure_client_secret
-      }
-      env {
-        name  = "AZURE_TENANT_ID"
-        value = var.azure_tenant_id
-      }
-      env {
-        name  = "AZURE_REDIRECT_URL"
-        value = var.azure_redirect_url
-      }
-      env {
-        name  = "SESSION_SECRET"
-        value = var.session_secret
-      }
+  network_profile {
+    network_plugin = "azure"
+    load_balancer_profile {
+      outbound_ip_address_ids = [azurerm_public_ip.aks_ingress.id]
     }
   }
 
-  ingress {
-    external_enabled = true
-    target_port      = 8080
-
-    traffic_weight {
-      percentage      = 100
-      latest_revision = true
-    }
+  identity {
+    type = "SystemAssigned"
   }
 }

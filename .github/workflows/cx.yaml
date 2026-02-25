@@ -273,6 +273,30 @@ jobs:
         working-directory: terraform
         run: terraform apply -auto-approve tfplan
 
+      - name: Get AKS credentials
+        run: az aks get-credentials --resource-group l7se-do --name l7sedoaks --overwrite-existing
+
+      - name: Deploy to AKS
+        env:
+          CONTAINER_IMAGE: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-build-push.outputs.image-tag }}"
+          DOCKER_CONFIG_JSON: ${{ secrets.DOCKER_CONFIG_JSON }}
+          GITHUB_TOKEN: ${{ secrets.PAT_FOR_GITHUB }}
+          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+          SONARQUBE_URL: ${{ secrets.SONARQUBE_URL }}
+          ATLASSIAN_URL: ${{ secrets.ATLASSIAN_URL }}
+          ATLASSIAN_CLOUD_ID: ${{ secrets.ATLASSIAN_CLOUD_ID }}
+          ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
+          ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+          JIRA_EPIC_LINK_FIELD: ${{ secrets.JIRA_EPIC_LINK_FIELD }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_REDIRECT_URL: ${{ secrets.AZURE_REDIRECT_URL }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+        run: |
+          envsubst < k8s/deployment.yaml | kubectl apply -f -
+
   # ──────────────────────────────────────────────
   #  Stage 5 ▸ Integration Smoke Test
   # ──────────────────────────────────────────────
@@ -366,3 +390,27 @@ jobs:
       - name: Terraform apply
         working-directory: terraform
         run: terraform apply -auto-approve tfplan
+
+      - name: Get AKS credentials
+        run: az aks get-credentials --resource-group l7se-do --name l7sedoaks --overwrite-existing
+
+      - name: Deploy to AKS
+        env:
+          CONTAINER_IMAGE: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-build-push.outputs.image-tag }}"
+          DOCKER_CONFIG_JSON: ${{ secrets.DOCKER_CONFIG_JSON }}
+          GITHUB_TOKEN: ${{ secrets.PAT_FOR_GITHUB }}
+          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+          SONARQUBE_URL: ${{ secrets.SONARQUBE_URL }}
+          ATLASSIAN_URL: ${{ secrets.ATLASSIAN_URL }}
+          ATLASSIAN_CLOUD_ID: ${{ secrets.ATLASSIAN_CLOUD_ID }}
+          ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
+          ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+          JIRA_EPIC_LINK_FIELD: ${{ secrets.JIRA_EPIC_LINK_FIELD }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_REDIRECT_URL: ${{ secrets.AZURE_REDIRECT_URL }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+        run: |
+          envsubst < k8s/deployment.yaml | kubectl apply -f -
