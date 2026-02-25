@@ -1,0 +1,157 @@
+---
+name: "SonarQube Scan"
+description: "Scan your code with SonarQube Scanner to detect issues"
+author: "Maersk-Global/devprodeng-mtts"
+branding:
+  icon: "code"
+  color: "blue"
+
+inputs:
+  host:
+    description: SonarQube server URL
+    required: true
+  login:
+    description: Authentication token of a SonarQube user
+    required: true
+  projectKey:
+    description: |
+      The project's unique key. Allowed characters are: letters, numbers, -, _, . and :, with at least one non-digit.
+      Default is combination of [ <repo name>_[ <branch name> OR <PR number> ] ] with hyphens '-' instead of slashes '/'.
+    required: false
+  projectName:
+    description: |
+      Name of the project that will be displayed on the web interface.
+      Default is combination of [ <repo name>_[ <branch name> OR <PR number> ] ] with hyphens '-' instead of slashes '/'.
+    required: false
+  projectVersion:
+    description: The project version
+    required: false
+    default: "1.0"
+  projectBaseDir:
+    description: The base directory of the project. Default is the repository root.
+    required: false
+    default: "."
+  extra_sonar_args:
+    description: |
+      Extra sonar args apart from above. Pattern below.
+      -Dsonar.sources=src \
+      -Dsonar.python.coverage.reportPaths='blackduck_preparation/.tox/*coverage-*.xml' \
+      -Dsonar.coverageReportPaths='coverage-reports/*coverage-*.xml'
+    required: false
+  binding:
+    description: bind the SonarQube project with the GitHub repository
+    required: false
+    default: "true"
+  monorepo:
+    description: |
+      Enable monorepo support. Set only if binding is true and if GitHub repository is a monorepo.
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: check input and set undefined parameters
+      env:
+        INPUT_PROJECTNAME: ${{ inputs.projectName }}
+        INPUT_PROJECTBASEDIR: ${{ inputs.projectBaseDir }}
+        INPUT_PROJECTKEY: ${{ inputs.projectKey }}
+        INPUT_BINDING: ${{ inputs.binding }}
+        INPUT_MONOREPO: ${{ inputs.monorepo }}
+      id: set-parameters
+      shell: bash
+      run: |
+        # verify that binding is enabled if monorepo support is requested
+        if [[ "$INPUT_BINDING" != "true" && "$INPUT_MONOREPO" == "true" ]]; then
+          echo WARNING: monorepo support is requested but binding is disabled. \
+            Thus monorepo support cannot be enabled.
+        fi
+
+        # verify input monorepo
+        if [[ "$INPUT_MONOREPO" != "true" && "$INPUT_MONOREPO" != "false" ]]; then
+          echo FATAL: monorepo must either be true or false, but is $INPUT_MONOREPO.
+          exit 1
+        fi
+
+        # if not defined set the project name to the repository name
+        if [[ -z ${INPUT_PROJECTNAME} ]]; then
+          PROJECT_NAME="$(echo "${GITHUB_REPOSITORY}" | awk -F / '{print $2}')"
+        else
+          PROJECT_NAME="${INPUT_PROJECTNAME}"
+        fi
+        # replace / with - in project name
+        SONAR_PROJECTNAME="$(echo "${PROJECT_NAME}" | sed "s/\//-/g")"
+
+        # if not defined set the project base dir to the workspace
+        if [[ -z ${INPUT_PROJECTBASEDIR} ]]; then
+          SONAR_PROJECTBASEDIR="${GITHUB_WORKSPACE}"
+        else
+          SONAR_PROJECTBASEDIR="${INPUT_PROJECTBASEDIR}"
+        fi
+
+        # if not defined set the project key to the project name
+        if [[ -z ${INPUT_PROJECTKEY} ]]; then
+          SONAR_PROJECTKEY="${SONAR_PROJECTNAME}"
+        else
+          SONAR_PROJECTKEY="${INPUT_PROJECTKEY}"
+        fi
+
+        {
+          echo "SONAR_PROJECTBASEDIR=${SONAR_PROJECTBASEDIR}"
+          echo "SONAR_PROJECTKEY=${SONAR_PROJECTKEY}"
+          echo "SONAR_PROJECTNAME=${SONAR_PROJECTNAME}"
+        } | tee -a "$GITHUB_OUTPUT"
+
+    - name: Process extra sonar args
+      env:
+        INPUT_EXTRA_SONAR_ARGS: ${{ inputs.extra_sonar_args }}
+      id: process-args
+      shell: bash
+      run: |
+        # Process extra_sonar_args to remove trailing backslashes and newlines
+        EXTRA_ARGS="$INPUT_EXTRA_SONAR_ARGS"
+        if [[ -n "${EXTRA_ARGS}" ]]; then
+          # Remove trailing backslashes and join lines with spaces
+          PROCESSED_ARGS=$(echo "${EXTRA_ARGS}" | sed 's/[[:space:]]*\\[[:space:]]*$//g' | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        else
+          PROCESSED_ARGS=""
+        fi
+        echo "PROCESSED_EXTRA_ARGS=${PROCESSED_ARGS}" | tee -a "$GITHUB_OUTPUT"
+
+    - name: Bind SonarQube project with GitHub repository
+      if: ${{ inputs.binding == 'true' }}
+      id: bind
+      uses: Maersk-Global/github-actions/bindSonarQube@main
+      with:
+        host: ${{ inputs.host }}
+        token: ${{ inputs.login }}
+        projectKey: ${{ steps.set-parameters.outputs.SONAR_PROJECTKEY }}
+        projectName: ${{ steps.set-parameters.outputs.SONAR_PROJECTNAME }}
+        monorepo: ${{ inputs.monorepo }}
+
+    - name: SonarQube Scan
+      uses: SonarSource/sonarqube-scan-action@v7.0.0 # see the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
+      env:
+        SONAR_TOKEN: ${{ inputs.login }}
+        SONAR_HOST_URL: ${{ inputs.host }}
+      with:
+        args: >
+          -Dsonar.projectKey=${{ steps.set-parameters.outputs.SONAR_PROJECTKEY }}
+          "-Dsonar.projectName=${{ steps.set-parameters.outputs.SONAR_PROJECTNAME }}"
+          -Dsonar.projectVersion=${{ inputs.projectVersion }}
+          ${{ steps.process-args.outputs.PROCESSED_EXTRA_ARGS }}
+        projectBaseDir: ${{ steps.set-parameters.outputs.SONAR_PROJECTBASEDIR }}
+
+outputs:
+  projectKey:
+    description: Unique identifier of the SonarQube project
+    value: ${{ steps.set-parameters.outputs.SONAR_PROJECTKEY }}
+  projectName:
+    description: Name of the SonarQube project
+    value: ${{ steps.set-parameters.outputs.SONAR_PROJECTNAME }}
+  projectBaseDir:
+    description: Directory where the analysis starts from
+    value: ${{ steps.set-parameters.outputs.SONAR_PROJECTBASEDIR }}
+  bindResult:
+    description: Result of the bind action
+    value: ${{ steps.bind.outputs.bindResult }}

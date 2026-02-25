@@ -8,15 +8,21 @@ variable "container_image" {
   description = "Container image to deploy (e.g. ghcr.io/org/repo:sha)"
 }
 
+variable "app_service_sku" {
+  type        = string
+  description = "App Service Plan SKU (e.g. B1, B2, S1)"
+  default     = "B1"
+}
+
 variable "cpu" {
   type        = number
-  description = "CPU allocation for the container"
+  description = "CPU allocation for the container (unused – kept for future K8s migration)"
   default     = 0.25
 }
 
 variable "memory" {
   type        = string
-  description = "Memory allocation for the container"
+  description = "Memory allocation for the container (unused – kept for future K8s migration)"
   default     = "0.5Gi"
 }
 
