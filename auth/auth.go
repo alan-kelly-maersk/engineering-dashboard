@@ -225,6 +225,9 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	allowedHosts := []string{
 		"https://trusted1.example.com/",
 		"https://trusted2.example.com/",
+		"http://localhost:8080/",
+		"https://l7se-do-int-app.azurewebsites.net/",
+		"https://l7se-do-prod-app.azurewebsites.net/",
 	}
 
 	if !slices.Contains(allowedHosts, redirectURL) {
