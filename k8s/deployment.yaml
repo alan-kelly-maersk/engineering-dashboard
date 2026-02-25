@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: engineering-dashboard
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ghcr-pull-secret
+  namespace: engineering-dashboard
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: ${DOCKER_CONFIG_JSON}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: engineering-dashboard
+data:
+  SONARQUBE_URL: ${SONARQUBE_URL}
+  ATLASSIAN_URL: ${ATLASSIAN_URL}
+  ATLASSIAN_CLOUD_ID: ${ATLASSIAN_CLOUD_ID}
+  ATLASSIAN_EMAIL: ${ATLASSIAN_EMAIL}
+  JIRA_PROJECT_KEY: ${JIRA_PROJECT_KEY}
+  JIRA_EPIC_LINK_FIELD: ${JIRA_EPIC_LINK_FIELD}
+  AZURE_REDIRECT_URL: ${AZURE_REDIRECT_URL}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: engineering-dashboard
+type: Opaque
+stringData:
+  GITHUB_TOKEN: ${GITHUB_TOKEN}
+  SONARQUBE_TOKEN: ${SONARQUBE_TOKEN}
+  ATLASSIAN_API_TOKEN: ${ATLASSIAN_API_TOKEN}
+  AZURE_CLIENT_ID: ${AZURE_CLIENT_ID}
+  AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET}
+  AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+  SESSION_SECRET: ${SESSION_SECRET}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engineering-dashboard
+  namespace: engineering-dashboard
+  labels:
+    app: engineering-dashboard
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: engineering-dashboard
+  template:
+    metadata:
+      labels:
+        app: engineering-dashboard
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      containers:
+        - name: engineering-dashboard
+          image: ${CONTAINER_IMAGE}
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: app-secrets
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: engineering-dashboard
+  namespace: engineering-dashboard
+  labels:
+    app: engineering-dashboard
+spec:
+  type: LoadBalancer
+  selector:
+    app: engineering-dashboard
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
