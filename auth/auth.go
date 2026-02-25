@@ -223,6 +223,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	allowedHosts := []string{
+		"/",
 		"https://trusted1.example.com/",
 		"https://trusted2.example.com/",
 		"http://localhost:8080/",
@@ -231,7 +232,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !slices.Contains(allowedHosts, redirectURL) {
-		http.Error(w, "Invalid redirect URL", http.StatusForbidden)
+		http.Error(w, "Invalid redirect URL: "+redirectURL, http.StatusForbidden)
 		return
 	}
 
