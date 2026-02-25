@@ -278,6 +278,7 @@ jobs:
 
       - name: Deploy to AKS
         env:
+          NAMESPACE: engineering-dashboard-integration
           CONTAINER_IMAGE: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-build-push.outputs.image-tag }}"
           DOCKER_CONFIG_JSON: ${{ secrets.DOCKER_CONFIG_JSON }}
           GITHUB_TOKEN: ${{ secrets.PAT_FOR_GITHUB }}
@@ -396,6 +397,7 @@ jobs:
 
       - name: Deploy to AKS
         env:
+          NAMESPACE: engineering-dashboard-production
           CONTAINER_IMAGE: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-build-push.outputs.image-tag }}"
           DOCKER_CONFIG_JSON: ${{ secrets.DOCKER_CONFIG_JSON }}
           GITHUB_TOKEN: ${{ secrets.PAT_FOR_GITHUB }}
