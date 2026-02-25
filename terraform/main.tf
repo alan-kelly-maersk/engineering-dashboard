@@ -139,7 +139,7 @@ resource "azurerm_public_ip" "aks_ingress" {
   allocation_method   = "Static"
   sku                 = "Standard"
   domain_name_label   = "l7sedoaks"
-  
+
   tags = {
     environment = "production"
   }
