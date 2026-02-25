@@ -10,3 +10,8 @@ engineering-dashboard
 *.tfstate.backup
 *.tfplan
 crash.log
+
+k8s/app-secrets.yaml
+k8s/pull-secret.yaml
+k8s/service.yaml
+k8s/configmap.yaml
