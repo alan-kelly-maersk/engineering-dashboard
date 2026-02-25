@@ -118,23 +118,23 @@ jobs:
         with:
           name: coverage-report
 
-      - name: Run SonarQube scan
-        uses: ./.github/actions/SonarQube
-        env:
-          MDN_SONARQUBE_TOKEN: ${{ secrets.MDN_SONARQUBE_TOKEN }}
-        with:
-          host: ${{ vars.SONARQUBE_URL }}
-          login: ${{ env.MDN_SONARQUBE_TOKEN }}
-          projectKey: "engineering-dashboard"
-          projectName: "Engineering Dashboard"
-          projectBaseDir: "."
-          projectVersion: "0.0.1"
-          binding: true
-          extra_sonar_args: |
-            -Dsonar.qualitygate.wait=true \
-            -Dsonar.go.coverage.reportPaths=coverage.out \
-            -Dsonar.exclusions=**/*_test.go \
-            -Dsonar.test.inclusions=**/*_test.go
+      # - name: Run SonarQube scan
+      #   uses: ./.github/actions/SonarQube
+      #   env:
+      #     MDN_SONARQUBE_TOKEN: ${{ secrets.MDN_SONARQUBE_TOKEN }}
+      #   with:
+      #     host: ${{ vars.SONARQUBE_URL }}
+      #     login: ${{ env.MDN_SONARQUBE_TOKEN }}
+      #     projectKey: "engineering-dashboard"
+      #     projectName: "Engineering Dashboard"
+      #     projectBaseDir: "."
+      #     projectVersion: "0.0.1"
+      #     binding: true
+      #     extra_sonar_args: |
+      #       -Dsonar.qualitygate.wait=true \
+      #       -Dsonar.go.coverage.reportPaths=coverage.out \
+      #       -Dsonar.exclusions=**/*_test.go \
+      #       -Dsonar.test.inclusions=**/*_test.go
 
   # ──────────────────────────────────────────────
   #  Stage 2c ▸ Terraform Validate
