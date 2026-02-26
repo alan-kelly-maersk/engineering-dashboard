@@ -292,20 +292,20 @@ jobs:
     needs: deploy-integration
     steps:
       # LATERS: Replace with the actual integration environment URL once deployed
-      # - name: Health check
-      #   run: |
-      #     MAX_RETRIES=10
-      #     RETRY_INTERVAL=15
-      #     for i in $(seq 1 $MAX_RETRIES); do
-      #       if curl -sf "https://l7se-do-int-ca.<region>.azurecontainerapps.io/health"; then
-      #         echo "Health check passed on attempt $i"
-      #         exit 0
-      #       fi
-      #       echo "Attempt $i/$MAX_RETRIES failed, retrying in ${RETRY_INTERVAL}s..."
-      #       sleep $RETRY_INTERVAL
-      #     done
-      #     echo "::error::Health check failed after $MAX_RETRIES attempts"
-      #     exit 1
+      - name: Health check
+        run: |
+          MAX_RETRIES=10
+          RETRY_INTERVAL=15
+          for i in $(seq 1 $MAX_RETRIES); do
+            if curl -sf "https://l7se-do-int-app.azurewebsites.net//health"; then
+              echo "Health check passed on attempt $i"
+              exit 0
+            fi
+            echo "Attempt $i/$MAX_RETRIES failed, retrying in ${RETRY_INTERVAL}s..."
+            sleep $RETRY_INTERVAL
+          done
+          echo "::error::Health check failed after $MAX_RETRIES attempts"
+          exit 1
       - name: "Placeholder: health check"
         run: echo "::warning::Smoke test placeholder – configure the integration environment URL for health checks"
 
