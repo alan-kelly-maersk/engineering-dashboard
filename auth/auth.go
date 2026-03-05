@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
-	"slices"
 	"strings"
 	"time"
 
@@ -223,22 +221,11 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	allowedHosts := []string{
-		"localhost",
-		"l7se-do-int-app.azurewebsites.net",
-		"l7se-do-prod-app.azurewebsites.net",
-	}
-
-	// extract the hostname from the redirect URL and check against allowedHosts
-	url, err := url.Parse(redirectURL)
-	if err != nil {
-		http.Error(w, "Invalid redirect URL: "+redirectURL, http.StatusForbidden)
-		return
-	}
-	hostname := url.Hostname()
-	if !slices.Contains(allowedHosts, hostname) {
-		http.Error(w, "Invalid redirect URL: "+redirectURL, http.StatusForbidden)
-		return
+	// The redirect URL is always a relative path set by our RequireAuth middleware
+	// (e.g. "/" or "/dashboard"). Validate it's a safe relative path to prevent
+	// open redirect attacks via crafted cookie values.
+	if !strings.HasPrefix(redirectURL, "/") || strings.HasPrefix(redirectURL, "//") {
+		redirectURL = "/"
 	}
 
 	http.Redirect(w, r, redirectURL, http.StatusFound)

@@ -567,11 +567,11 @@ func TestCallback_SuccessFlow(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Callback(w, req)
 
-	// The redirect URL validation will reject since "/" is not in the allowedHosts list,
-	// which means it'll get a 403. But the code path up to that point (exchange, parse, session) is exercised.
-	// That's OK - we're testing code coverage of the exchange/parse/session flow.
-	if w.Code != http.StatusForbidden && w.Code != http.StatusFound {
-		t.Errorf("status = %d, want 403 or 302", w.Code)
+	if w.Code != http.StatusFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusFound)
+	}
+	if loc := w.Header().Get("Location"); loc != "/" {
+		t.Errorf("redirect = %q, want /", loc)
 	}
 
 	// Verify that a session cookie was set (the createSession call succeeded)
@@ -621,12 +621,15 @@ func TestCallback_WithRedirectCookie(t *testing.T) {
 
 	req := httptest.NewRequest("GET", "/auth/callback?state=xyz&code=code", nil)
 	req.AddCookie(&http.Cookie{Name: "oauth_state", Value: "xyz"})
-	req.AddCookie(&http.Cookie{Name: "auth_redirect", Value: "https://localhost/"})
+	req.AddCookie(&http.Cookie{Name: "auth_redirect", Value: "/dashboard"})
 	w := httptest.NewRecorder()
 	h.Callback(w, req)
 
 	if w.Code != http.StatusFound {
-		t.Errorf("status = %d, want %d (redirect to trusted URL)", w.Code, http.StatusFound)
+		t.Errorf("status = %d, want %d", w.Code, http.StatusFound)
+	}
+	if loc := w.Header().Get("Location"); loc != "/dashboard" {
+		t.Errorf("redirect = %q, want /dashboard", loc)
 	}
 }
 
