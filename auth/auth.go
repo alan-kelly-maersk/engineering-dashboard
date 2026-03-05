@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -223,15 +224,19 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	allowedHosts := []string{
-		"/",
-		"https://trusted1.example.com/",
-		"https://trusted2.example.com/",
-		"http://localhost:8080/",
-		"https://l7se-do-int-app.azurewebsites.net/",
-		"https://l7se-do-prod-app.azurewebsites.net/",
+		"localhost",
+		"l7se-do-int-app.azurewebsites.net",
+		"l7se-do-prod-app.azurewebsites.net",
 	}
 
-	if !slices.Contains(allowedHosts, redirectURL) {
+	// extract the hostname from the redirect URL and check against allowedHosts
+	url, err := url.Parse(redirectURL)
+	if err != nil {
+		http.Error(w, "Invalid redirect URL: "+redirectURL, http.StatusForbidden)
+		return
+	}
+	hostname := url.Hostname()
+	if !slices.Contains(allowedHosts, hostname) {
 		http.Error(w, "Invalid redirect URL: "+redirectURL, http.StatusForbidden)
 		return
 	}
