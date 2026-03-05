@@ -283,6 +283,9 @@ jobs:
         working-directory: terraform
         run: terraform apply -auto-approve tfplan
 
+      - name: Restart web app to pull new image
+        run: az webapp restart --name l7se-do-int-app --resource-group l7se-do
+
   # ──────────────────────────────────────────────
   #  Stage 5 ▸ Integration Smoke Test
   # ──────────────────────────────────────────────
@@ -386,3 +389,6 @@ jobs:
       - name: Terraform apply
         working-directory: terraform
         run: terraform apply -auto-approve tfplan
+
+      - name: Restart web app to pull new image
+        run: az webapp restart --name l7se-do-prod-app --resource-group l7se-do
