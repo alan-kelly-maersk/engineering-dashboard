@@ -62,8 +62,8 @@ func TestNewHandler_DefaultRedirectURL(t *testing.T) {
 
 func TestNewHandler_GeneratesSessionKey(t *testing.T) {
 	h := NewHandler(Config{
-		ClientID:   "test-client-id",
-		TenantID:   "test-tenant",
+		ClientID: "test-client-id",
+		TenantID: "test-tenant",
 	})
 	if len(h.sessionKey) == 0 {
 		t.Error("expected auto-generated session key")
@@ -621,7 +621,7 @@ func TestCallback_WithRedirectCookie(t *testing.T) {
 
 	req := httptest.NewRequest("GET", "/auth/callback?state=xyz&code=code", nil)
 	req.AddCookie(&http.Cookie{Name: "oauth_state", Value: "xyz"})
-	req.AddCookie(&http.Cookie{Name: "auth_redirect", Value: "https://trusted1.example.com/"})
+	req.AddCookie(&http.Cookie{Name: "auth_redirect", Value: "https://localhost/"})
 	w := httptest.NewRecorder()
 	h.Callback(w, req)
 
