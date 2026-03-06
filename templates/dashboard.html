@@ -46,21 +46,6 @@
             height: 32px;
         }
 
-        .refresh-btn {
-            background: #238636;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .refresh-btn:hover {
-            background: #2ea043;
-        }
-
         /* Tabs */
         .tabs {
             display: flex;
@@ -99,6 +84,11 @@
             padding: 0.125rem 0.5rem;
             border-radius: 9999px;
             font-size: 0.75rem;
+            display: none;
+        }
+
+        .tab-badge.visible {
+            display: inline;
         }
 
         .tab.active .tab-badge {
@@ -114,6 +104,107 @@
         .tab-badge.danger {
             background: #f8514933;
             color: #f85149;
+        }
+
+        /* Cache status bar */
+        .cache-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem 1rem;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            font-size: 0.8125rem;
+        }
+
+        .cache-timestamp {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #8b949e;
+        }
+
+        .cache-timestamp svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
+        .refresh-btn {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            transition: background 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: #2ea043;
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .refresh-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .refresh-btn.refreshing svg {
+            animation: spin 1s linear infinite;
+        }
+
+        .tab-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            color: #8b949e;
+            font-size: 0.875rem;
+            gap: 0.75rem;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #30363d;
+            border-top-color: #58a6ff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .tab-error {
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+
+        .retry-btn {
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .retry-btn:hover {
+            background: #30363d;
         }
 
         /* Metrics Grid */
@@ -317,7 +408,7 @@
         }
 
         .collapsible-header::before {
-            content: '▶';
+            content: '\25B6';
             font-size: 0.625rem;
             transition: transform 0.2s;
         }
@@ -727,572 +818,43 @@
                     <a href="/auth/logout" style="color: #8b949e; text-decoration: none; margin-left: 0.25rem; padding: 0.25rem 0.5rem; border: 1px solid #30363d; border-radius: 6px; font-size: 0.75rem;" onfocus="this.style.borderColor='#8b949e'" onmouseover="this.style.borderColor='#8b949e'" onblur="this.style.borderColor='#30363d'" onmouseout="this.style.borderColor='#30363d'">Sign out</a>
                 </div>
                 {{end}}
-                <button class="refresh-btn" onclick="location.reload()">Refresh</button>
             </div>
         </header>
 
         <nav class="tabs">
-            <a href="/?tab=security" class="tab {{if eq .ActiveTab "security"}}active{{end}}">
+            <a href="/?tab=security" class="tab {{if eq .ActiveTab "security"}}active{{end}}" data-tab="security" onclick="switchTab('security'); return false;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 </svg>
                 Security
-                {{if gt .Security.TotalDependabotAlerts 0}}
-                <span class="tab-badge danger">{{.Security.TotalDependabotAlerts}}</span>
-                {{end}}
+                <span id="badge-security" class="tab-badge danger"></span>
             </a>
-            <a href="/?tab=dependencies" class="tab {{if eq .ActiveTab "dependencies"}}active{{end}}">
+            <a href="/?tab=dependencies" class="tab {{if eq .ActiveTab "dependencies"}}active{{end}}" data-tab="dependencies" onclick="switchTab('dependencies'); return false;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
                     <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
                     <line x1="12" y1="22.08" x2="12" y2="12"/>
                 </svg>
                 Dependencies
-                {{if eq .ActiveTab "dependencies"}}
-                    {{if gt .Dependencies.OutdatedDependencies 0}}
-                    <span class="tab-badge warning">{{.Dependencies.OutdatedDependencies}} outdated</span>
-                    {{end}}
-                {{end}}
+                <span id="badge-dependencies" class="tab-badge warning"></span>
             </a>
             {{if .SonarQubeEnabled}}
-            <a href="/?tab=codequality" class="tab {{if eq .ActiveTab "codequality"}}active{{end}}">
+            <a href="/?tab=codequality" class="tab {{if eq .ActiveTab "codequality"}}active{{end}}" data-tab="codequality" onclick="switchTab('codequality'); return false;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                     <polyline points="22 4 12 14.01 9 11.01"/>
                 </svg>
                 Code Quality
-                {{if eq .ActiveTab "codequality"}}
-                    {{if gt .CodeQuality.TotalBugs 0}}
-                    <span class="tab-badge warning">{{.CodeQuality.TotalBugs}} bugs</span>
-                    {{end}}
-                {{end}}
+                <span id="badge-codequality" class="tab-badge warning"></span>
             </a>
             {{end}}
         </nav>
 
-        {{if eq .ActiveTab "security"}}
-        <!-- Security Tab -->
-        <section class="metrics-grid">
-            <div class="metric-card">
-                <h3>Repositories</h3>
-                <div class="metric-value neutral">{{.Security.TotalRepos}}</div>
-            </div>
-            <div class="metric-card">
-                <h3>Dependabot Alerts</h3>
-                <div class="metric-value {{if gt .Security.TotalDependabotAlerts 0}}danger{{else}}low{{end}}">{{.Security.TotalDependabotAlerts}}</div>
-                {{if .Security.DependabotBySeverity}}
-                <div class="severity-breakdown">
-                    {{range $severity, $count := .Security.DependabotBySeverity}}
-                    <span class="severity-item">
-                        <span class="severity-dot {{$severity}}"></span>
-                        {{$severity}}: {{$count}}
-                    </span>
-                    {{end}}
-                </div>
-                {{end}}
-            </div>
-            <div class="metric-card">
-                <h3>Code Scanning Alerts</h3>
-                <div class="metric-value {{if gt .Security.TotalCodeScanningAlerts 0}}danger{{else}}low{{end}}">{{.Security.TotalCodeScanningAlerts}}</div>
-                {{if .Security.CodeScanningBySeverity}}
-                <div class="severity-breakdown">
-                    {{range $severity, $count := .Security.CodeScanningBySeverity}}
-                    <span class="severity-item">
-                        <span class="severity-dot {{$severity}}"></span>
-                        {{$severity}}: {{$count}}
-                    </span>
-                    {{end}}
-                </div>
-                {{end}}
-            </div>
-            <div class="metric-card">
-                <h3>Secret Scanning Alerts</h3>
-                <div class="metric-value {{if gt .Security.TotalSecretAlerts 0}}danger{{else}}low{{end}}">{{.Security.TotalSecretAlerts}}</div>
-            </div>
-        </section>
-
-        <section>
-            <h2 class="section-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                </svg>
-                Repositories
-            </h2>
-            <div class="repo-grid">
-                {{range .Security.Repositories}}
-                <div class="repo-card {{if .Error}}has-error{{end}}">
-                    <div class="repo-header">
-                        <a href="https://github.com/{{.FullName}}/security" target="_blank" class="repo-name">{{.FullName}}</a>
-                    </div>
-                    
-                    <div class="repo-stats">
-                        <div class="stat-group">
-                            <span class="stat-label">Dependabot</span>
-                            <span class="stat-value {{if eq (len .DependabotAlerts) 0}}zero{{else if gt (len .DependabotAlerts) 5}}danger{{else}}warning{{end}}">
-                                {{len .DependabotAlerts}}
-                            </span>
-                        </div>
-                        <div class="stat-group">
-                            <span class="stat-label">Code Scanning</span>
-                            <span class="stat-value {{if eq (len .CodeScanningAlerts) 0}}zero{{else if gt (len .CodeScanningAlerts) 5}}danger{{else}}warning{{end}}">
-                                {{len .CodeScanningAlerts}}
-                            </span>
-                        </div>
-                        <div class="stat-group">
-                            <span class="stat-label">Secrets</span>
-                            <span class="stat-value {{if eq (len .SecretScanningAlerts) 0}}zero{{else}}danger{{end}}">
-                                {{len .SecretScanningAlerts}}
-                            </span>
-                        </div>
-                    </div>
-
-                    {{if .Error}}
-                    <div class="error-message">{{.Error}}</div>
-                    {{end}}
-
-                    {{if or .DependabotAlerts .CodeScanningAlerts .SecretScanningAlerts}}
-                    <div class="alert-list">
-                        {{if .DependabotAlerts}}
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div class="collapsible-header" onclick="toggleCollapsible(this)" onkeypress="toggleCollapsible(this)">
-                                Dependabot Alerts ({{len .DependabotAlerts}})
-                            </div>
-                            {{if $.JiraEnabled}}
-                            <button class="jira-btn" onclick="openJiraModal('dependabot_alerts', '{{.FullName}}', {count: {{len .DependabotAlerts}}, alerts: 'See GitHub for details'}, 'Address {{len .DependabotAlerts}} Dependabot alerts in {{.FullName}}')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                                Jira
-                            </button>
-                            {{end}}
-                        </div>
-                        <div class="collapsible-content">
-                            {{range .DependabotAlerts}}
-                            <div class="alert-item">
-                                <span class="alert-severity {{.SecurityAdvisory.Severity}}">{{.SecurityAdvisory.Severity}}</span>
-                                <span class="alert-title">
-                                    <a href="{{.HTMLURL}}" target="_blank" class="alert-link">{{.SecurityAdvisory.Summary}}</a>
-                                    <br><small style="color: #8b949e;">{{.SecurityVuln.Package.Name}}</small>
-                                </span>
-                            </div>
-                            {{end}}
-                        </div>
-                        {{end}}
-
-                        {{if .CodeScanningAlerts}}
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div class="collapsible-header" onclick="toggleCollapsible(this)" onkeypress="toggleCollapsible(this)">
-                                Code Scanning Alerts ({{len .CodeScanningAlerts}})
-                            </div>
-                            {{if $.JiraEnabled}}
-                            <button class="jira-btn" onclick="openJiraModal('code_scanning_alerts', '{{.FullName}}', {count: {{len .CodeScanningAlerts}}, alerts: 'See GitHub for details'}, 'Fix {{len .CodeScanningAlerts}} code scanning issues in {{.FullName}}')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                                Jira
-                            </button>
-                            {{end}}
-                        </div>
-                        <div class="collapsible-content">
-                            {{range .CodeScanningAlerts}}
-                            <div class="alert-item">
-                                <span class="alert-severity {{.Rule.SecuritySeverityLevel}}">{{if .Rule.SecuritySeverityLevel}}{{.Rule.SecuritySeverityLevel}}{{else}}{{.Rule.Severity}}{{end}}</span>
-                                <span class="alert-title">
-                                    <a href="{{.HTMLURL}}" target="_blank" class="alert-link">{{.Rule.Description}}</a>
-                                    <br><small style="color: #8b949e;">{{.MostRecentInstance.Location.Path}}:{{.MostRecentInstance.Location.StartLine}}</small>
-                                </span>
-                            </div>
-                            {{end}}
-                        </div>
-                        {{end}}
-
-                        {{if .SecretScanningAlerts}}
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div class="collapsible-header" onclick="toggleCollapsible(this)" onkeypress="toggleCollapsible(this)">
-                                Secret Scanning Alerts ({{len .SecretScanningAlerts}})
-                            </div>
-                            {{if $.JiraEnabled}}
-                            <button class="jira-btn" onclick="openJiraModal('secret_scanning_alerts', '{{.FullName}}', {count: {{len .SecretScanningAlerts}}, alerts: 'See GitHub for details'}, 'Remediate {{len .SecretScanningAlerts}} exposed secrets in {{.FullName}}')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                                Jira
-                            </button>
-                            {{end}}
-                        </div>
-                        <div class="collapsible-content">
-                            {{range .SecretScanningAlerts}}
-                            <div class="alert-item">
-                                <span class="alert-severity high">secret</span>
-                                <span class="alert-title">
-                                    <a href="{{.HTMLURL}}" target="_blank" class="alert-link">{{.SecretTypeDesc}}</a>
-                                </span>
-                            </div>
-                            {{end}}
-                        </div>
-                        {{end}}
-                    </div>
-                    {{else}}
-                    {{if not .Error}}
-                    <div class="no-alerts">No open security alerts</div>
-                    {{end}}
-                    {{end}}
-                </div>
-                {{end}}
-            </div>
-        </section>
-
-        {{else if eq .ActiveTab "dependencies"}}
-        <!-- Dependencies Tab -->
-        <section class="metrics-grid">
-            <div class="metric-card">
-                <h3>Go Repositories</h3>
-                <div class="metric-value neutral">{{.Dependencies.GoRepos}} / {{.Dependencies.TotalRepos}}</div>
-                <div style="font-size: 0.75rem; color: #8b949e; margin-top: 0.5rem;">detected by GitHub</div>
-            </div>
-            <div class="metric-card">
-                <h3>go.mod Files</h3>
-                <div class="metric-value neutral">{{.Dependencies.TotalGoModFiles}}</div>
-                <div style="font-size: 0.75rem; color: #8b949e; margin-top: 0.5rem;">in {{.Dependencies.ReposWithGoMod}} repos</div>
-            </div>
-            <div class="metric-card">
-                <h3>Latest Go Version</h3>
-                <div class="metric-value neutral" style="font-size: 1.75rem;">{{if .Dependencies.LatestGoVersion}}{{.Dependencies.LatestGoVersion}}{{else}}Unknown{{end}}</div>
-            </div>
-            <div class="metric-card">
-                <h3>Outdated Go Versions</h3>
-                <div class="metric-value {{if gt .Dependencies.OutdatedGoVersions 0}}warning{{else}}low{{end}}">{{.Dependencies.OutdatedGoVersions}}</div>
-            </div>
-            <div class="metric-card">
-                <h3>Outdated Dependencies</h3>
-                <div class="metric-value {{if gt .Dependencies.OutdatedDependencies 0}}warning{{else}}low{{end}}">{{.Dependencies.OutdatedDependencies}}</div>
-                <div style="font-size: 0.75rem; color: #8b949e; margin-top: 0.5rem;">of {{.Dependencies.TotalDependencies}} total</div>
-            </div>
-        </section>
-
-        <section>
-            <h2 class="section-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                </svg>
-                Go Modules
-            </h2>
-            <div class="repo-grid">
-                {{range $repo := .Dependencies.Repositories}}
-                <div class="repo-card {{if $repo.Error}}has-error{{end}}">
-                    <div class="repo-header">
-                        <a href="https://github.com/{{$repo.FullName}}" target="_blank" class="repo-name">{{$repo.FullName}}</a>
-                        <div style="display: flex; gap: 0.5rem; align-items: center;">
-                            {{if $repo.IsGoRepo}}
-                            <span class="dep-badge uptodate">Go</span>
-                            {{else}}
-                            <span class="dep-badge indirect">Not Go</span>
-                            {{end}}
-                            {{if gt (len $repo.GoMods) 1}}
-                            <span class="dep-badge" style="background: #58a6ff33; color: #58a6ff;">{{len $repo.GoMods}} modules</span>
-                            {{end}}
-                        </div>
-                    </div>
-
-                    {{if $repo.Error}}
-                    <div class="error-message">{{$repo.Error}}</div>
-                    {{else if not $repo.IsGoRepo}}
-                    <div class="no-alerts" style="color: #8b949e;">Not a Go repository (skipped)</div>
-                    {{else if eq (len $repo.GoMods) 0}}
-                    <div class="no-alerts" style="color: #8b949e;">Go repo but no go.mod found</div>
-                    {{else}}
-                    
-                    {{range $repo.GoMods}}
-                    <div class="gomod-section" style="margin-top: 1rem; {{if gt (len $repo.GoMods) 1}}padding: 1rem; background: #0d1117; border-radius: 6px; border: 1px solid #21262d;{{end}}">
-                        {{if gt (len $repo.GoMods) 1}}
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                            <span class="module-path" style="font-size: 0.875rem; color: #58a6ff;">{{.FilePath}}</span>
-                            <div class="concern-actions">
-                                <span class="go-version {{if .GoVersionOutdated}}outdated{{else}}current{{end}}">
-                                    Go {{.GoVersion}}
-                                    {{if .GoVersionOutdated}}
-                                    <span class="version-arrow">→</span> {{.LatestGoVersion}}
-                                    {{end}}
-                                </span>
-                                {{if and .GoVersionOutdated $.JiraEnabled}}
-                                <button class="jira-btn" onclick="openJiraModal('outdated_go', '{{$repo.FullName}}', {current_version: '{{.GoVersion}}', latest_version: '{{.LatestGoVersion}}', file_path: '{{.FilePath}}'}, 'Update Go from {{.GoVersion}} to {{.LatestGoVersion}} in {{$repo.FullName}}')">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                                    Jira
-                                </button>
-                                {{end}}
-                            </div>
-                        </div>
-                        {{else}}
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                            <div class="module-path">{{.ModulePath}}</div>
-                            <div class="concern-actions">
-                                {{if .GoVersion}}
-                                <span class="go-version {{if .GoVersionOutdated}}outdated{{else}}current{{end}}">
-                                    Go {{.GoVersion}}
-                                    {{if .GoVersionOutdated}}
-                                    <span class="version-arrow">→</span> {{.LatestGoVersion}}
-                                    {{end}}
-                                </span>
-                                {{end}}
-                                {{if and .GoVersionOutdated $.JiraEnabled}}
-                                <button class="jira-btn" onclick="openJiraModal('outdated_go', '{{$repo.FullName}}', {current_version: '{{.GoVersion}}', latest_version: '{{.LatestGoVersion}}', file_path: '{{.FilePath}}'}, 'Update Go from {{.GoVersion}} to {{.LatestGoVersion}} in {{$repo.FullName}}')">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                                    Jira
-                                </button>
-                                {{end}}
-                            </div>
-                        </div>
-                        {{if ne .FilePath "go.mod"}}
-                        <div class="module-path" style="font-size: 0.75rem; margin-bottom: 0.5rem;">📁 {{.FilePath}}</div>
-                        {{end}}
-                        {{end}}
-
-                        <div class="repo-stats">
-                            <div class="stat-group">
-                                <span class="stat-label">Direct Deps</span>
-                                <span class="stat-value neutral" style="font-size: 1rem;">{{.DirectDeps}}</span>
-                            </div>
-                            <div class="stat-group">
-                                <span class="stat-label">Indirect Deps</span>
-                                <span class="stat-value neutral" style="font-size: 1rem;">{{.IndirectDeps}}</span>
-                            </div>
-                            <div class="stat-group">
-                                <span class="stat-label">Outdated</span>
-                                <span class="stat-value {{if gt .OutdatedDeps 0}}warning{{else}}zero{{end}}" style="font-size: 1rem;">{{.OutdatedDeps}}</span>
-                            </div>
-                        </div>
-
-                        {{if .Dependencies}}
-                        <div class="alert-list" style="margin-top: 0.75rem; padding-top: 0.75rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div class="collapsible-header" onclick="toggleCollapsible(this)" onkeypress="toggleCollapsible(this)">
-                                    Dependencies ({{.TotalDeps}}){{if gt .OutdatedDeps 0}} - <span style="color: #d29922;">{{.OutdatedDeps}} outdated</span>{{end}}
-                                </div>
-                                {{if and (gt .OutdatedDeps 0) $.JiraEnabled}}
-                                <button class="jira-btn" onclick="openJiraModal('outdated_dependencies', '{{$repo.FullName}}', {count: {{.OutdatedDeps}}, dependencies: 'See dashboard for details'}, 'Update {{.OutdatedDeps}} outdated dependencies in {{$repo.FullName}}')">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                                    Jira
-                                </button>
-                                {{end}}
-                            </div>
-                            <div class="collapsible-content">
-                                <table class="dep-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Module</th>
-                                            <th>Current</th>
-                                            <th>Latest</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {{range .Dependencies}}
-                                        <tr>
-                                            <td>
-                                                <span class="dep-name">{{.Path}}</span>
-                                                {{if .IsIndirect}}<span class="dep-badge indirect">indirect</span>{{end}}
-                                            </td>
-                                            <td><span class="dep-version">{{.CurrentVersion}}</span></td>
-                                            <td>
-                                                {{if .Error}}
-                                                <span class="dep-badge error">error</span>
-                                                {{else if .LatestVersion}}
-                                                <span class="dep-version {{if .IsOutdated}}outdated{{else}}current{{end}}">{{.LatestVersion}}</span>
-                                                {{else}}
-                                                <span style="color: #8b949e;">-</span>
-                                                {{end}}
-                                            </td>
-                                            <td>
-                                                {{if .Error}}
-                                                <span class="dep-badge error" title="{{.Error}}">N/A</span>
-                                                {{else if .IsOutdated}}
-                                                <span class="dep-badge outdated">Out of date</span>
-                                                {{else}}
-                                                <span class="dep-badge uptodate">Up to date</span>
-                                                {{end}}
-                                            </td>
-                                        </tr>
-                                        {{end}}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        {{end}}
-                    </div>
-                    {{end}}
-                    {{end}}
-                </div>
-                {{end}}
-            </div>
-        </section>
-
-        {{else if eq .ActiveTab "codequality"}}
-        <!-- Code Quality Tab -->
-        <section class="metrics-grid">
-            <div class="metric-card">
-                <h3>Analyzed Projects</h3>
-                <div class="metric-value neutral">{{.CodeQuality.AnalyzedRepos}} / {{.CodeQuality.TotalRepos}}</div>
-                <div style="font-size: 0.75rem; color: #8b949e; margin-top: 0.5rem;">in SonarQube</div>
-            </div>
-            <div class="metric-card">
-                <h3>Quality Gate</h3>
-                <div style="display: flex; gap: 1rem; align-items: baseline;">
-                    <div>
-                        <div class="metric-value low" style="font-size: 1.75rem;">{{.CodeQuality.QualityGatePassed}}</div>
-                        <div style="font-size: 0.75rem; color: #3fb950;">passed</div>
-                    </div>
-                    <div>
-                        <div class="metric-value {{if gt .CodeQuality.QualityGateFailed 0}}danger{{else}}low{{end}}" style="font-size: 1.75rem;">{{.CodeQuality.QualityGateFailed}}</div>
-                        <div style="font-size: 0.75rem; color: {{if gt .CodeQuality.QualityGateFailed 0}}#f85149{{else}}#8b949e{{end}};">failed</div>
-                    </div>
-                </div>
-            </div>
-            <div class="metric-card">
-                <h3>Bugs</h3>
-                <div class="metric-value {{if gt .CodeQuality.TotalBugs 0}}warning{{else}}low{{end}}">{{.CodeQuality.TotalBugs}}</div>
-            </div>
-            <div class="metric-card">
-                <h3>Vulnerabilities</h3>
-                <div class="metric-value {{if gt .CodeQuality.TotalVulnerabilities 0}}danger{{else}}low{{end}}">{{.CodeQuality.TotalVulnerabilities}}</div>
-            </div>
-            <div class="metric-card">
-                <h3>Code Smells</h3>
-                <div class="metric-value {{if gt .CodeQuality.TotalCodeSmells 100}}warning{{else if gt .CodeQuality.TotalCodeSmells 0}}medium{{else}}low{{end}}">{{.CodeQuality.TotalCodeSmells}}</div>
-            </div>
-            <div class="metric-card">
-                <h3>Security Hotspots</h3>
-                <div class="metric-value {{if gt .CodeQuality.TotalSecurityHotspots 0}}warning{{else}}low{{end}}">{{.CodeQuality.TotalSecurityHotspots}}</div>
-            </div>
-            <div class="metric-card">
-                <h3>Avg. Coverage</h3>
-                <div class="metric-value {{if lt .CodeQuality.AverageCoverage 50.0}}danger{{else if lt .CodeQuality.AverageCoverage 80.0}}warning{{else}}low{{end}}" style="font-size: 1.75rem;">
-                    {{printf "%.1f" .CodeQuality.AverageCoverage}}%
-                </div>
-            </div>
-        </section>
-
-        <section>
-            <h2 class="section-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                    <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                SonarQube Projects
-            </h2>
-            <div class="repo-grid repo-grid-2col">
-                {{range $repo := .CodeQuality.Repositories}}
-                <div class="repo-card {{if $repo.Error}}has-error{{end}}">
-                    <div class="repo-header">
-                        <a href="{{$.SonarQubeBaseURL}}/dashboard?id={{$repo.SonarQubeProject}}" target="_blank" class="repo-name">{{$repo.FullName}}</a>
-                        <div style="display: flex; gap: 0.5rem; align-items: center;">
-                            {{if $repo.QualityGateStatus}}
-                            <span class="dep-badge {{if eq $repo.QualityGateStatus "OK"}}uptodate{{else}}error{{end}}">
-                                {{if eq $repo.QualityGateStatus "OK"}}Passed{{else}}Failed{{end}}
-                            </span>
-                            {{end}}
-                            {{if ne $repo.SonarQubeProject $repo.Repo}}
-                            <span class="dep-badge indirect" title="SonarQube project key">{{$repo.SonarQubeProject}}</span>
-                            {{end}}
-                        </div>
-                    </div>
-
-                    {{if $repo.Error}}
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
-                        <div class="error-message" style="flex: 1;">{{$repo.Error}}</div>
-                        {{if $.JiraEnabled}}
-                        <button class="jira-btn" style="margin-top: 0.5rem;" onclick="openJiraModal('missing_sonarqube', '{{$repo.FullName}}', {project_key: '{{$repo.SonarQubeProject}}'}, 'Add {{$repo.FullName}} to SonarQube')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                            Jira
-                        </button>
-                        {{end}}
-                    </div>
-                    {{else}}
-                    <div class="repo-stats">
-                        <div class="stat-group">
-                            <span class="stat-label">Bugs</span>
-                            <span class="stat-value {{if eq $repo.Bugs 0}}zero{{else if gt $repo.Bugs 5}}danger{{else}}warning{{end}}" style="font-size: 1rem;">
-                                {{$repo.Bugs}}
-                            </span>
-                        </div>
-                        <div class="stat-group">
-                            <span class="stat-label">Vulnerabilities</span>
-                            <span class="stat-value {{if eq $repo.Vulnerabilities 0}}zero{{else}}danger{{end}}" style="font-size: 1rem;">
-                                {{$repo.Vulnerabilities}}
-                            </span>
-                        </div>
-                        <div class="stat-group">
-                            <span class="stat-label">Code Smells</span>
-                            <span class="stat-value {{if eq $repo.CodeSmells 0}}zero{{else if gt $repo.CodeSmells 50}}warning{{else}}neutral{{end}}" style="font-size: 1rem;">
-                                {{$repo.CodeSmells}}
-                            </span>
-                        </div>
-                        <div class="stat-group">
-                            <span class="stat-label">Hotspots</span>
-                            <span class="stat-value {{if eq $repo.SecurityHotspots 0}}zero{{else}}warning{{end}}" style="font-size: 1rem;">
-                                {{$repo.SecurityHotspots}}
-                            </span>
-                        </div>
-                        <div class="stat-group">
-                            <span class="stat-label">Coverage</span>
-                            <span class="stat-value {{if lt $repo.Coverage 50.0}}danger{{else if lt $repo.Coverage 80.0}}warning{{else}}zero{{end}}" style="font-size: 1rem;">
-                                {{printf "%.1f" $repo.Coverage}}%
-                            </span>
-                        </div>
-                        <div class="stat-group">
-                            <span class="stat-label">Duplication</span>
-                            <span class="stat-value {{if gt $repo.DuplicatedLines 10.0}}warning{{else}}zero{{end}}" style="font-size: 1rem;">
-                                {{printf "%.1f" $repo.DuplicatedLines}}%
-                            </span>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #30363d;">
-                        <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span style="font-size: 0.75rem; color: #8b949e;">Reliability</span>
-                                <span class="rating-badge rating-{{$repo.ReliabilityRating}}">{{$repo.ReliabilityRating}}</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span style="font-size: 0.75rem; color: #8b949e;">Security</span>
-                                <span class="rating-badge rating-{{$repo.SecurityRating}}">{{$repo.SecurityRating}}</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span style="font-size: 0.75rem; color: #8b949e;">Maintainability</span>
-                                <span class="rating-badge rating-{{$repo.MaintainabilityRating}}">{{$repo.MaintainabilityRating}}</span>
-                            </div>
-                            {{if $repo.LinesOfCode}}
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span style="font-size: 0.75rem; color: #8b949e;">Lines of Code</span>
-                                <span style="font-size: 0.875rem; color: #c9d1d9;">{{$repo.LinesOfCode}}</span>
-                            </div>
-                            {{end}}
-                            {{if $repo.LastAnalysis}}
-                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
-                                <span style="font-size: 0.75rem; color: #8b949e;">Last Analysis</span>
-                                <span style="font-size: 0.75rem; color: #8b949e;">{{$repo.LastAnalysis}}</span>
-                            </div>
-                            {{end}}
-                        </div>
-                        {{if $.JiraEnabled}}
-                        <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;">
-                            {{if or (gt $repo.Vulnerabilities 0) (gt $repo.SecurityHotspots 0)}}
-                            <button class="jira-btn" onclick="openJiraModal('sonarqube_vulnerabilities', '{{$repo.FullName}}', {vulnerabilities: {{$repo.Vulnerabilities}}, hotspots: {{$repo.SecurityHotspots}}, project_key: '{{$repo.SonarQubeProject}}'}, 'Fix {{$repo.Vulnerabilities}} vulnerabilities and {{$repo.SecurityHotspots}} security hotspots in {{$repo.FullName}}')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                                Create Ticket for Security Issues
-                            </button>
-                            {{end}}
-                            {{if and $repo.QualityGateStatus (ne $repo.QualityGateStatus "OK")}}
-                            <button class="jira-btn" onclick="openJiraModal('quality_gate_failed', '{{$repo.FullName}}', {project_key: '{{$repo.SonarQubeProject}}', conditions: 'Quality gate status: {{$repo.QualityGateStatus}}'}, 'Fix quality gate failure in {{$repo.FullName}}')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                                Create Ticket for Quality Gate
-                            </button>
-                            {{end}}
-                        </div>
-                        {{end}}
-                    </div>
-                    {{end}}
-                </div>
-                {{end}}
-            </div>
-        </section>
-        {{end}}
+        <div id="tab-content">
+            <div class="tab-loading"><div class="spinner"></div>Loading...</div>
+        </div>
     </div>
 
-    <!-- Jira Modal -->
     {{if .JiraEnabled}}
     <div id="jiraModal" class="jira-modal-overlay">
         <div class="jira-modal">
@@ -1320,57 +882,771 @@
         </div>
     </div>
 
-    <!-- Toast Notification -->
     <div id="jiraToast" class="jira-toast">
         <span id="toastMessage">Ticket created!</span>
     </div>
     {{end}}
 
     <script>
+        // ─── Configuration ───────────────────────────────────────────────
+        const CONFIG = {
+            sonarQubeEnabled: {{if .SonarQubeEnabled}}true{{else}}false{{end}},
+            sonarQubeBaseURL: '{{.SonarQubeBaseURL}}',
+            jiraEnabled: {{if .JiraEnabled}}true{{else}}false{{end}},
+            initialTab: '{{.ActiveTab}}'
+        };
+
+        const API = {
+            security: '/api/metrics',
+            dependencies: '/api/dependencies',
+            codequality: '/api/codequality'
+        };
+
+        // ─── Cache Layer ─────────────────────────────────────────────────
+        const CACHE_KEY = 'engdash_';
+
+        function cacheGet(tab) {
+            try {
+                const raw = localStorage.getItem(CACHE_KEY + tab);
+                if (!raw) return null;
+                return JSON.parse(raw);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function cacheSet(tab, data) {
+            try {
+                localStorage.setItem(CACHE_KEY + tab, JSON.stringify({
+                    data: data,
+                    ts: Date.now()
+                }));
+            } catch (e) {
+                // localStorage full or unavailable
+            }
+        }
+
+        function cacheClear(tab) {
+            try { localStorage.removeItem(CACHE_KEY + tab); } catch (e) {}
+        }
+
+        // ─── Utilities ──────────────────────────────────────────────────
+        function esc(str) {
+            if (!str) return '';
+            const el = document.createElement('span');
+            el.textContent = str;
+            return el.innerHTML;
+        }
+
+        function timeAgo(ts) {
+            const s = Math.floor((Date.now() - ts) / 1000);
+            if (s < 5) return 'just now';
+            if (s < 60) return s + ' seconds ago';
+            const m = Math.floor(s / 60);
+            if (m < 60) return m === 1 ? '1 minute ago' : m + ' minutes ago';
+            const h = Math.floor(m / 60);
+            if (h < 24) return h === 1 ? '1 hour ago' : h + ' hours ago';
+            const d = Math.floor(h / 24);
+            return d === 1 ? '1 day ago' : d + ' days ago';
+        }
+
+        function statColorClass(val, warnThreshold, dangerThreshold) {
+            if (val === 0) return 'zero';
+            if (dangerThreshold !== undefined && val > dangerThreshold) return 'danger';
+            if (warnThreshold !== undefined && val > warnThreshold) return 'warning';
+            return 'warning';
+        }
+
+        const JIRA_BTN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>';
+
+        function jiraBtn(onclick) {
+            if (!CONFIG.jiraEnabled) return '';
+            return `<button class="jira-btn" onclick="${esc(onclick)}">${JIRA_BTN_SVG} Jira</button>`;
+        }
+
+        function jiraBtnLabelled(onclick, label) {
+            if (!CONFIG.jiraEnabled) return '';
+            return `<button class="jira-btn" onclick="${esc(onclick)}">${JIRA_BTN_SVG} ${esc(label)}</button>`;
+        }
+
+        // ─── Tab Management ─────────────────────────────────────────────
+        let activeTab = CONFIG.initialTab;
+        let loadGeneration = 0;
+
+        function switchTab(tab, skipPush) {
+            if (!API[tab]) tab = 'security';
+            activeTab = tab;
+
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === tab);
+            });
+
+            if (!skipPush) {
+                history.pushState({ tab: tab }, '', '/?tab=' + tab);
+            }
+
+            loadTabContent(tab, false);
+        }
+
+        window.addEventListener('popstate', function(e) {
+            const params = new URLSearchParams(window.location.search);
+            const tab = params.get('tab') || 'security';
+            switchTab(tab, true);
+        });
+
+        async function loadTabContent(tab, forceRefresh) {
+            const gen = ++loadGeneration;
+            const container = document.getElementById('tab-content');
+            const cached = cacheGet(tab);
+
+            if (cached && !forceRefresh) {
+                renderTab(tab, cached.data);
+                renderCacheStatus(tab, cached.ts);
+                updateBadge(tab, cached.data);
+                return;
+            }
+
+            if (cached) {
+                renderTab(tab, cached.data);
+                renderCacheStatus(tab, cached.ts, true);
+                updateBadge(tab, cached.data);
+            } else {
+                container.innerHTML = '<div class="tab-loading"><div class="spinner"></div>Loading...</div>';
+            }
+
+            try {
+                const resp = await fetch(API[tab]);
+                if (gen !== loadGeneration) return;
+                if (!resp.ok) throw new Error('Server returned ' + resp.status);
+                const data = await resp.json();
+                cacheSet(tab, data);
+                renderTab(tab, data);
+                renderCacheStatus(tab, Date.now());
+                updateBadge(tab, data);
+            } catch (err) {
+                if (gen !== loadGeneration) return;
+                if (!cached) {
+                    container.innerHTML = `<div class="tab-error">
+                        <div class="error-message" style="display:inline-block;margin-bottom:1rem;">Failed to load data: ${esc(err.message)}</div>
+                        <br><button class="retry-btn" onclick="loadTabContent('${tab}', true)">Retry</button>
+                    </div>`;
+                } else {
+                    renderCacheStatus(tab, cached.ts, false, err.message);
+                }
+            }
+        }
+
+        function refreshTab() {
+            loadTabContent(activeTab, true);
+        }
+
+        function renderTab(tab, data) {
+            const container = document.getElementById('tab-content');
+            switch (tab) {
+                case 'security': container.innerHTML = renderSecurityTab(data); break;
+                case 'dependencies': container.innerHTML = renderDependenciesTab(data); break;
+                case 'codequality': container.innerHTML = renderCodeQualityTab(data); break;
+            }
+        }
+
+        function renderCacheStatus(tab, ts, refreshing, errorMsg) {
+            let el = document.getElementById('cache-status');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'cache-status';
+                el.className = 'cache-status';
+                const container = document.getElementById('tab-content');
+                container.insertBefore(el, container.firstChild);
+            }
+
+            const refreshClass = refreshing ? ' refreshing' : '';
+            const refreshDisabled = refreshing ? ' disabled' : '';
+            const refreshLabel = refreshing ? 'Refreshing...' : 'Refresh';
+
+            let statusText = 'Last updated ' + timeAgo(ts);
+            if (errorMsg) {
+                statusText += ` <span style="color:#f85149;margin-left:0.5rem;">(refresh failed: ${esc(errorMsg)})</span>`;
+            }
+
+            el.innerHTML = `
+                <span class="cache-timestamp">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    ${statusText}
+                </span>
+                <button class="refresh-btn${refreshClass}" onclick="refreshTab()"${refreshDisabled}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                    ${refreshLabel}
+                </button>`;
+            el.dataset.ts = ts;
+        }
+
+        function updateBadge(tab, data) {
+            const el = document.getElementById('badge-' + tab);
+            if (!el) return;
+
+            let count = 0;
+            let label = '';
+
+            switch (tab) {
+                case 'security':
+                    count = data.TotalDependabotAlerts || 0;
+                    label = String(count);
+                    el.className = 'tab-badge danger' + (count > 0 ? ' visible' : '');
+                    break;
+                case 'dependencies':
+                    count = data.outdated_dependencies || 0;
+                    label = count + ' outdated';
+                    el.className = 'tab-badge warning' + (count > 0 ? ' visible' : '');
+                    break;
+                case 'codequality':
+                    count = data.total_bugs || 0;
+                    label = count + ' bugs';
+                    el.className = 'tab-badge warning' + (count > 0 ? ' visible' : '');
+                    break;
+            }
+            el.textContent = label;
+        }
+
+        // Update "X minutes ago" text periodically
+        setInterval(function() {
+            const el = document.getElementById('cache-status');
+            if (el && el.dataset.ts) {
+                const span = el.querySelector('.cache-timestamp');
+                if (span) {
+                    const ts = parseInt(el.dataset.ts);
+                    const svg = span.querySelector('svg').outerHTML;
+                    span.innerHTML = svg + ' Last updated ' + timeAgo(ts);
+                }
+            }
+        }, 30000);
+
+        // On page load, also populate badges from cache for non-active tabs
+        function initBadgesFromCache() {
+            ['security', 'dependencies', 'codequality'].forEach(function(tab) {
+                var cached = cacheGet(tab);
+                if (cached) updateBadge(tab, cached.data);
+            });
+        }
+
+        // ─── Security Tab ────────────────────────────────────────────────
+        function renderSecurityTab(data) {
+            const repos = data.Repositories || [];
+            let html = '';
+
+            html += '<section class="metrics-grid">';
+            html += metricCard('Repositories', data.TotalRepos, 'neutral');
+            html += metricCard('Dependabot Alerts', data.TotalDependabotAlerts,
+                data.TotalDependabotAlerts > 0 ? 'danger' : 'low',
+                severityBreakdown(data.DependabotBySeverity));
+            html += metricCard('Code Scanning Alerts', data.TotalCodeScanningAlerts,
+                data.TotalCodeScanningAlerts > 0 ? 'danger' : 'low',
+                severityBreakdown(data.CodeScanningBySeverity));
+            html += metricCard('Secret Scanning Alerts', data.TotalSecretAlerts,
+                data.TotalSecretAlerts > 0 ? 'danger' : 'low');
+            html += '</section>';
+
+            html += `<section>
+                <h2 class="section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Repositories
+                </h2>
+                <div class="repo-grid">`;
+
+            repos.forEach(function(repo) {
+                html += renderSecurityRepo(repo);
+            });
+
+            html += '</div></section>';
+            return html;
+        }
+
+        function metricCard(title, value, colorClass, extra) {
+            return `<div class="metric-card">
+                <h3>${esc(title)}</h3>
+                <div class="metric-value ${colorClass}">${value || 0}</div>
+                ${extra || ''}
+            </div>`;
+        }
+
+        function severityBreakdown(map) {
+            if (!map) return '';
+            const entries = Object.entries(map);
+            if (entries.length === 0) return '';
+            let html = '<div class="severity-breakdown">';
+            entries.forEach(function(e) {
+                html += `<span class="severity-item">
+                    <span class="severity-dot ${e[0]}"></span>
+                    ${e[0]}: ${e[1]}
+                </span>`;
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function renderSecurityRepo(repo) {
+            const depAlerts = repo.DependabotAlerts || [];
+            const csAlerts = repo.CodeScanningAlerts || [];
+            const ssAlerts = repo.SecretScanningAlerts || [];
+            const hasError = !!repo.Error;
+            const hasAlerts = depAlerts.length > 0 || csAlerts.length > 0 || ssAlerts.length > 0;
+
+            let html = `<div class="repo-card${hasError ? ' has-error' : ''}">
+                <div class="repo-header">
+                    <a href="https://github.com/${esc(repo.FullName)}/security" target="_blank" class="repo-name">${esc(repo.FullName)}</a>
+                </div>
+                <div class="repo-stats">
+                    <div class="stat-group">
+                        <span class="stat-label">Dependabot</span>
+                        <span class="stat-value ${depAlerts.length === 0 ? 'zero' : depAlerts.length > 5 ? 'danger' : 'warning'}">${depAlerts.length}</span>
+                    </div>
+                    <div class="stat-group">
+                        <span class="stat-label">Code Scanning</span>
+                        <span class="stat-value ${csAlerts.length === 0 ? 'zero' : csAlerts.length > 5 ? 'danger' : 'warning'}">${csAlerts.length}</span>
+                    </div>
+                    <div class="stat-group">
+                        <span class="stat-label">Secrets</span>
+                        <span class="stat-value ${ssAlerts.length === 0 ? 'zero' : 'danger'}">${ssAlerts.length}</span>
+                    </div>
+                </div>`;
+
+            if (hasError) {
+                html += `<div class="error-message">${esc(repo.Error)}</div>`;
+            }
+
+            if (hasAlerts) {
+                html += '<div class="alert-list">';
+                if (depAlerts.length > 0) {
+                    html += renderAlertSection('Dependabot Alerts', depAlerts, function(a) {
+                        return `<div class="alert-item">
+                            <span class="alert-severity ${a.security_advisory.severity}">${esc(a.security_advisory.severity)}</span>
+                            <span class="alert-title">
+                                <a href="${esc(a.html_url)}" target="_blank" class="alert-link">${esc(a.security_advisory.summary)}</a>
+                                <br><small style="color:#8b949e;">${esc(a.security_vulnerability.package.name)}</small>
+                            </span>
+                        </div>`;
+                    }, `openJiraModal('dependabot_alerts', '${escAttr(repo.FullName)}', {count: ${depAlerts.length}, alerts: 'See GitHub for details'}, 'Address ${depAlerts.length} Dependabot alerts in ${escAttr(repo.FullName)}')`);
+                }
+                if (csAlerts.length > 0) {
+                    html += renderAlertSection('Code Scanning Alerts', csAlerts, function(a) {
+                        const sev = a.rule.security_severity_level || a.rule.severity;
+                        return `<div class="alert-item">
+                            <span class="alert-severity ${sev}">${esc(sev)}</span>
+                            <span class="alert-title">
+                                <a href="${esc(a.html_url)}" target="_blank" class="alert-link">${esc(a.rule.description)}</a>
+                                <br><small style="color:#8b949e;">${esc(a.most_recent_instance.location.path)}:${a.most_recent_instance.location.start_line}</small>
+                            </span>
+                        </div>`;
+                    }, `openJiraModal('code_scanning_alerts', '${escAttr(repo.FullName)}', {count: ${csAlerts.length}, alerts: 'See GitHub for details'}, 'Fix ${csAlerts.length} code scanning issues in ${escAttr(repo.FullName)}')`);
+                }
+                if (ssAlerts.length > 0) {
+                    html += renderAlertSection('Secret Scanning Alerts', ssAlerts, function(a) {
+                        return `<div class="alert-item">
+                            <span class="alert-severity high">secret</span>
+                            <span class="alert-title">
+                                <a href="${esc(a.html_url)}" target="_blank" class="alert-link">${esc(a.secret_type_display_name)}</a>
+                            </span>
+                        </div>`;
+                    }, `openJiraModal('secret_scanning_alerts', '${escAttr(repo.FullName)}', {count: ${ssAlerts.length}, alerts: 'See GitHub for details'}, 'Remediate ${ssAlerts.length} exposed secrets in ${escAttr(repo.FullName)}')`);
+                }
+                html += '</div>';
+            } else if (!hasError) {
+                html += '<div class="no-alerts">No open security alerts</div>';
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        function escAttr(s) {
+            return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        function renderAlertSection(title, alerts, renderItem, jiraOnclick) {
+            const jira = jiraOnclick ? jiraBtn(jiraOnclick) : '';
+            let html = `<div style="display:flex;justify-content:space-between;align-items:center;">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)" onkeypress="toggleCollapsible(this)">
+                    ${esc(title)} (${alerts.length})
+                </div>
+                ${jira}
+            </div>
+            <div class="collapsible-content">`;
+            alerts.forEach(function(a) { html += renderItem(a); });
+            html += '</div>';
+            return html;
+        }
+
+        // ─── Dependencies Tab ────────────────────────────────────────────
+        function renderDependenciesTab(data) {
+            const repos = data.repositories || [];
+            let html = '';
+
+            html += '<section class="metrics-grid">';
+            html += metricCard('Go Repositories', data.go_repos + ' / ' + data.total_repos, 'neutral',
+                '<div style="font-size:0.75rem;color:#8b949e;margin-top:0.5rem;">detected by GitHub</div>');
+            html += metricCard('go.mod Files', data.total_go_mod_files, 'neutral',
+                '<div style="font-size:0.75rem;color:#8b949e;margin-top:0.5rem;">in ' + data.repos_with_go_mod + ' repos</div>');
+            html += `<div class="metric-card">
+                <h3>Latest Go Version</h3>
+                <div class="metric-value neutral" style="font-size:1.75rem;">${data.latest_go_version || 'Unknown'}</div>
+            </div>`;
+            html += metricCard('Outdated Go Versions', data.outdated_go_versions,
+                data.outdated_go_versions > 0 ? 'warning' : 'low');
+            html += `<div class="metric-card">
+                <h3>Outdated Dependencies</h3>
+                <div class="metric-value ${data.outdated_dependencies > 0 ? 'warning' : 'low'}">${data.outdated_dependencies}</div>
+                <div style="font-size:0.75rem;color:#8b949e;margin-top:0.5rem;">of ${data.total_dependencies} total</div>
+            </div>`;
+            html += '</section>';
+
+            html += `<section>
+                <h2 class="section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    </svg>
+                    Go Modules
+                </h2>
+                <div class="repo-grid">`;
+
+            repos.forEach(function(repo) {
+                html += renderDepsRepo(repo);
+            });
+
+            html += '</div></section>';
+            return html;
+        }
+
+        function renderDepsRepo(repo) {
+            const mods = repo.go_mods || [];
+            const hasError = !!repo.error;
+
+            let html = `<div class="repo-card${hasError ? ' has-error' : ''}">
+                <div class="repo-header">
+                    <a href="https://github.com/${esc(repo.full_name)}" target="_blank" class="repo-name">${esc(repo.full_name)}</a>
+                    <div style="display:flex;gap:0.5rem;align-items:center;">`;
+
+            if (repo.is_go_repo) {
+                html += '<span class="dep-badge uptodate">Go</span>';
+            } else {
+                html += '<span class="dep-badge indirect">Not Go</span>';
+            }
+            if (mods.length > 1) {
+                html += `<span class="dep-badge" style="background:#58a6ff33;color:#58a6ff;">${mods.length} modules</span>`;
+            }
+            html += '</div></div>';
+
+            if (hasError) {
+                html += `<div class="error-message">${esc(repo.error)}</div>`;
+            } else if (!repo.is_go_repo) {
+                html += '<div class="no-alerts" style="color:#8b949e;">Not a Go repository (skipped)</div>';
+            } else if (mods.length === 0) {
+                html += '<div class="no-alerts" style="color:#8b949e;">Go repo but no go.mod found</div>';
+            } else {
+                mods.forEach(function(mod) {
+                    html += renderGoMod(repo, mod, mods.length > 1);
+                });
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        function renderGoMod(repo, mod, isMulti) {
+            let html = `<div class="gomod-section" style="margin-top:1rem;${isMulti ? 'padding:1rem;background:#0d1117;border-radius:6px;border:1px solid #21262d;' : ''}">`;
+
+            const goVersionHtml = mod.go_version ? `<span class="go-version ${mod.go_version_outdated ? 'outdated' : 'current'}">
+                Go ${esc(mod.go_version)}${mod.go_version_outdated ? ' <span class="version-arrow">&rarr;</span> ' + esc(mod.latest_go_version) : ''}
+            </span>` : '';
+
+            const goJira = mod.go_version_outdated ? jiraBtn(
+                `openJiraModal('outdated_go', '${escAttr(repo.full_name)}', {current_version: '${escAttr(mod.go_version)}', latest_version: '${escAttr(mod.latest_go_version)}', file_path: '${escAttr(mod.file_path)}'}, 'Update Go from ${escAttr(mod.go_version)} to ${escAttr(mod.latest_go_version)} in ${escAttr(repo.full_name)}')`
+            ) : '';
+
+            if (isMulti) {
+                html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                    <span class="module-path" style="font-size:0.875rem;color:#58a6ff;">${esc(mod.file_path)}</span>
+                    <div class="concern-actions">${goVersionHtml}${goJira}</div>
+                </div>`;
+            } else {
+                html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                    <div class="module-path">${esc(mod.module_path)}</div>
+                    <div class="concern-actions">${goVersionHtml}${goJira}</div>
+                </div>`;
+                if (mod.file_path !== 'go.mod') {
+                    html += `<div class="module-path" style="font-size:0.75rem;margin-bottom:0.5rem;">&#128193; ${esc(mod.file_path)}</div>`;
+                }
+            }
+
+            html += `<div class="repo-stats">
+                <div class="stat-group">
+                    <span class="stat-label">Direct Deps</span>
+                    <span class="stat-value neutral" style="font-size:1rem;">${mod.direct_deps}</span>
+                </div>
+                <div class="stat-group">
+                    <span class="stat-label">Indirect Deps</span>
+                    <span class="stat-value neutral" style="font-size:1rem;">${mod.indirect_deps}</span>
+                </div>
+                <div class="stat-group">
+                    <span class="stat-label">Outdated</span>
+                    <span class="stat-value ${mod.outdated_deps > 0 ? 'warning' : 'zero'}" style="font-size:1rem;">${mod.outdated_deps}</span>
+                </div>
+            </div>`;
+
+            const deps = mod.dependencies || [];
+            if (deps.length > 0) {
+                const outdatedJira = mod.outdated_deps > 0 ? jiraBtn(
+                    `openJiraModal('outdated_dependencies', '${escAttr(repo.full_name)}', {count: ${mod.outdated_deps}, dependencies: 'See dashboard for details'}, 'Update ${mod.outdated_deps} outdated dependencies in ${escAttr(repo.full_name)}')`
+                ) : '';
+
+                html += `<div class="alert-list" style="margin-top:0.75rem;padding-top:0.75rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div class="collapsible-header" onclick="toggleCollapsible(this)" onkeypress="toggleCollapsible(this)">
+                            Dependencies (${mod.total_deps})${mod.outdated_deps > 0 ? ' - <span style="color:#d29922;">' + mod.outdated_deps + ' outdated</span>' : ''}
+                        </div>
+                        ${outdatedJira}
+                    </div>
+                    <div class="collapsible-content">
+                        <table class="dep-table"><thead><tr>
+                            <th>Module</th><th>Current</th><th>Latest</th><th>Status</th>
+                        </tr></thead><tbody>`;
+
+                deps.forEach(function(dep) {
+                    html += '<tr><td>';
+                    html += `<span class="dep-name">${esc(dep.path)}</span>`;
+                    if (dep.is_indirect) html += ' <span class="dep-badge indirect">indirect</span>';
+                    html += '</td><td>';
+                    html += `<span class="dep-version">${esc(dep.current_version)}</span>`;
+                    html += '</td><td>';
+                    if (dep.error) {
+                        html += '<span class="dep-badge error">error</span>';
+                    } else if (dep.latest_version) {
+                        html += `<span class="dep-version ${dep.is_outdated ? 'outdated' : 'current'}">${esc(dep.latest_version)}</span>`;
+                    } else {
+                        html += '<span style="color:#8b949e;">-</span>';
+                    }
+                    html += '</td><td>';
+                    if (dep.error) {
+                        html += `<span class="dep-badge error" title="${esc(dep.error)}">N/A</span>`;
+                    } else if (dep.is_outdated) {
+                        html += '<span class="dep-badge outdated">Out of date</span>';
+                    } else {
+                        html += '<span class="dep-badge uptodate">Up to date</span>';
+                    }
+                    html += '</td></tr>';
+                });
+
+                html += '</tbody></table></div></div>';
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        // ─── Code Quality Tab ────────────────────────────────────────────
+        function renderCodeQualityTab(data) {
+            const repos = data.repositories || [];
+            let html = '';
+
+            html += '<section class="metrics-grid">';
+            html += metricCard('Analyzed Projects', data.analyzed_repos + ' / ' + data.total_repos, 'neutral',
+                '<div style="font-size:0.75rem;color:#8b949e;margin-top:0.5rem;">in SonarQube</div>');
+
+            html += `<div class="metric-card">
+                <h3>Quality Gate</h3>
+                <div style="display:flex;gap:1rem;align-items:baseline;">
+                    <div>
+                        <div class="metric-value low" style="font-size:1.75rem;">${data.quality_gate_passed}</div>
+                        <div style="font-size:0.75rem;color:#3fb950;">passed</div>
+                    </div>
+                    <div>
+                        <div class="metric-value ${data.quality_gate_failed > 0 ? 'danger' : 'low'}" style="font-size:1.75rem;">${data.quality_gate_failed}</div>
+                        <div style="font-size:0.75rem;color:${data.quality_gate_failed > 0 ? '#f85149' : '#8b949e'};">failed</div>
+                    </div>
+                </div>
+            </div>`;
+
+            html += metricCard('Bugs', data.total_bugs, data.total_bugs > 0 ? 'warning' : 'low');
+            html += metricCard('Vulnerabilities', data.total_vulnerabilities, data.total_vulnerabilities > 0 ? 'danger' : 'low');
+            html += metricCard('Code Smells', data.total_code_smells,
+                data.total_code_smells > 100 ? 'warning' : data.total_code_smells > 0 ? 'medium' : 'low');
+            html += metricCard('Security Hotspots', data.total_security_hotspots,
+                data.total_security_hotspots > 0 ? 'warning' : 'low');
+            html += `<div class="metric-card">
+                <h3>Avg. Coverage</h3>
+                <div class="metric-value ${data.average_coverage < 50 ? 'danger' : data.average_coverage < 80 ? 'warning' : 'low'}" style="font-size:1.75rem;">
+                    ${data.average_coverage.toFixed(1)}%
+                </div>
+            </div>`;
+            html += '</section>';
+
+            html += `<section>
+                <h2 class="section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    SonarQube Projects
+                </h2>
+                <div class="repo-grid repo-grid-2col">`;
+
+            repos.forEach(function(repo) {
+                html += renderCQRepo(repo);
+            });
+
+            html += '</div></section>';
+            return html;
+        }
+
+        function renderCQRepo(repo) {
+            const hasError = !!repo.error;
+            const sqUrl = CONFIG.sonarQubeBaseURL + '/dashboard?id=' + encodeURIComponent(repo.sonarqube_project);
+
+            let html = `<div class="repo-card${hasError ? ' has-error' : ''}">
+                <div class="repo-header">
+                    <a href="${esc(sqUrl)}" target="_blank" class="repo-name">${esc(repo.full_name)}</a>
+                    <div style="display:flex;gap:0.5rem;align-items:center;">`;
+
+            if (repo.quality_gate_status) {
+                const qgOk = repo.quality_gate_status === 'OK';
+                html += `<span class="dep-badge ${qgOk ? 'uptodate' : 'error'}">${qgOk ? 'Passed' : 'Failed'}</span>`;
+            }
+            if (repo.sonarqube_project !== repo.repo) {
+                html += `<span class="dep-badge indirect" title="SonarQube project key">${esc(repo.sonarqube_project)}</span>`;
+            }
+            html += '</div></div>';
+
+            if (hasError) {
+                html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;">';
+                html += `<div class="error-message" style="flex:1;">${esc(repo.error)}</div>`;
+                html += jiraBtnLabelled(
+                    `openJiraModal('missing_sonarqube', '${escAttr(repo.full_name)}', {project_key: '${escAttr(repo.sonarqube_project)}'}, 'Add ${escAttr(repo.full_name)} to SonarQube')`,
+                    'Jira'
+                );
+                html += '</div>';
+            } else {
+                html += `<div class="repo-stats">
+                    <div class="stat-group">
+                        <span class="stat-label">Bugs</span>
+                        <span class="stat-value ${repo.bugs === 0 ? 'zero' : repo.bugs > 5 ? 'danger' : 'warning'}" style="font-size:1rem;">${repo.bugs}</span>
+                    </div>
+                    <div class="stat-group">
+                        <span class="stat-label">Vulnerabilities</span>
+                        <span class="stat-value ${repo.vulnerabilities === 0 ? 'zero' : 'danger'}" style="font-size:1rem;">${repo.vulnerabilities}</span>
+                    </div>
+                    <div class="stat-group">
+                        <span class="stat-label">Code Smells</span>
+                        <span class="stat-value ${repo.code_smells === 0 ? 'zero' : repo.code_smells > 50 ? 'warning' : 'neutral'}" style="font-size:1rem;">${repo.code_smells}</span>
+                    </div>
+                    <div class="stat-group">
+                        <span class="stat-label">Hotspots</span>
+                        <span class="stat-value ${repo.security_hotspots === 0 ? 'zero' : 'warning'}" style="font-size:1rem;">${repo.security_hotspots}</span>
+                    </div>
+                    <div class="stat-group">
+                        <span class="stat-label">Coverage</span>
+                        <span class="stat-value ${repo.coverage < 50 ? 'danger' : repo.coverage < 80 ? 'warning' : 'zero'}" style="font-size:1rem;">${repo.coverage.toFixed(1)}%</span>
+                    </div>
+                    <div class="stat-group">
+                        <span class="stat-label">Duplication</span>
+                        <span class="stat-value ${repo.duplicated_lines_density > 10 ? 'warning' : 'zero'}" style="font-size:1rem;">${repo.duplicated_lines_density.toFixed(1)}%</span>
+                    </div>
+                </div>`;
+
+                html += '<div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #30363d;">';
+                html += '<div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;">';
+                html += ratingBadge('Reliability', repo.reliability_rating);
+                html += ratingBadge('Security', repo.security_rating);
+                html += ratingBadge('Maintainability', repo.maintainability_rating);
+                if (repo.lines_of_code) {
+                    html += `<div style="display:flex;align-items:center;gap:0.5rem;">
+                        <span style="font-size:0.75rem;color:#8b949e;">Lines of Code</span>
+                        <span style="font-size:0.875rem;color:#c9d1d9;">${repo.lines_of_code}</span>
+                    </div>`;
+                }
+                if (repo.last_analysis) {
+                    html += `<div style="display:flex;align-items:center;gap:0.5rem;margin-left:auto;">
+                        <span style="font-size:0.75rem;color:#8b949e;">Last Analysis</span>
+                        <span style="font-size:0.75rem;color:#8b949e;">${esc(repo.last_analysis)}</span>
+                    </div>`;
+                }
+                html += '</div>';
+
+                if (CONFIG.jiraEnabled) {
+                    let jiraButtons = '';
+                    if (repo.vulnerabilities > 0 || repo.security_hotspots > 0) {
+                        jiraButtons += jiraBtnLabelled(
+                            `openJiraModal('sonarqube_vulnerabilities', '${escAttr(repo.full_name)}', {vulnerabilities: ${repo.vulnerabilities}, hotspots: ${repo.security_hotspots}, project_key: '${escAttr(repo.sonarqube_project)}'}, 'Fix ${repo.vulnerabilities} vulnerabilities and ${repo.security_hotspots} security hotspots in ${escAttr(repo.full_name)}')`,
+                            'Create Ticket for Security Issues'
+                        );
+                    }
+                    if (repo.quality_gate_status && repo.quality_gate_status !== 'OK') {
+                        jiraButtons += jiraBtnLabelled(
+                            `openJiraModal('quality_gate_failed', '${escAttr(repo.full_name)}', {project_key: '${escAttr(repo.sonarqube_project)}', conditions: 'Quality gate status: ${escAttr(repo.quality_gate_status)}'}, 'Fix quality gate failure in ${escAttr(repo.full_name)}')`,
+                            'Create Ticket for Quality Gate'
+                        );
+                    }
+                    if (jiraButtons) {
+                        html += `<div style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap;">${jiraButtons}</div>`;
+                    }
+                }
+                html += '</div>';
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        function ratingBadge(label, rating) {
+            if (!rating) return '';
+            return `<div style="display:flex;align-items:center;gap:0.5rem;">
+                <span style="font-size:0.75rem;color:#8b949e;">${esc(label)}</span>
+                <span class="rating-badge rating-${esc(rating)}">${esc(rating)}</span>
+            </div>`;
+        }
+
+        // ─── Collapsible ─────────────────────────────────────────────────
         function toggleCollapsible(header) {
             header.classList.toggle('expanded');
-            // Check if the next sibling is the content, otherwise look at parent's sibling
-            // (handles case where header is wrapped in a flex container for Jira button)
-            let content = header.nextElementSibling;
+            var content = header.nextElementSibling;
             if (!content || !content.classList.contains('collapsible-content')) {
                 content = header.parentElement.nextElementSibling;
             }
             content.classList.toggle('show');
         }
 
+        // ─── Jira Integration ────────────────────────────────────────────
         {{if .JiraEnabled}}
-        // Jira Integration
-        let currentConcern = null;
-        let epicsLoaded = false;
+        var currentConcern = null;
+        var epicsLoaded = false;
 
         async function loadEpics() {
             if (epicsLoaded) return;
-            
             try {
                 const response = await fetch('/api/jira/epics');
                 if (!response.ok) throw new Error('Failed to load epics');
-                
                 const epics = await response.json();
                 const select = document.getElementById('epicSelect');
                 select.innerHTML = '<option value="">-- Select an Epic --</option>';
-                
-                epics.forEach(epic => {
+                epics.forEach(function(epic) {
                     const option = document.createElement('option');
                     option.value = epic.key;
-                    option.textContent = `${epic.key}: ${epic.summary}`;
+                    option.textContent = epic.key + ': ' + epic.summary;
                     select.appendChild(option);
                 });
-                
                 epicsLoaded = true;
             } catch (error) {
                 console.error('Error loading epics:', error);
-                document.getElementById('epicSelect').innerHTML = 
+                document.getElementById('epicSelect').innerHTML =
                     '<option value="">Error loading epics</option>';
             }
         }
 
         function openJiraModal(concernType, repo, details, summaryPreview) {
-            currentConcern = { concernType, repo, details };
+            currentConcern = { concernType: concernType, repo: repo, details: details };
             document.getElementById('jiraTicketSummary').textContent = summaryPreview;
             document.getElementById('jiraModal').classList.add('show');
             document.getElementById('epicSelect').value = '';
@@ -1384,17 +1660,14 @@
 
         async function createJiraTicket() {
             if (!currentConcern) return;
-            
             const epicKey = document.getElementById('epicSelect').value;
             if (!epicKey) {
                 showToast('Please select an epic', true);
                 return;
             }
-
             const btn = document.getElementById('createTicketBtn');
             btn.disabled = true;
             btn.textContent = 'Creating...';
-
             try {
                 const response = await fetch('/api/jira/ticket', {
                     method: 'POST',
@@ -1406,15 +1679,13 @@
                         details: currentConcern.details
                     })
                 });
-
                 if (!response.ok) {
                     const error = await response.text();
                     throw new Error(error);
                 }
-
                 const result = await response.json();
                 closeJiraModal();
-                showToast(`Created <a href="${result.url}" target="_blank">${result.key}</a>`);
+                showToast('Created <a href="' + result.url + '" target="_blank">' + result.key + '</a>');
             } catch (error) {
                 console.error('Error creating ticket:', error);
                 showToast('Failed to create ticket: ' + error.message, true);
@@ -1424,28 +1695,27 @@
             }
         }
 
-        function showToast(message, isError = false) {
+        function showToast(message, isError) {
             const toast = document.getElementById('jiraToast');
             const messageEl = document.getElementById('toastMessage');
             messageEl.innerHTML = message;
             toast.classList.remove('error');
             if (isError) toast.classList.add('error');
             toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 5000);
+            setTimeout(function() { toast.classList.remove('show'); }, 5000);
         }
 
-        // Close modal on escape key
-        document.addEventListener('keydown', (e) => {
+        document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') closeJiraModal();
         });
-
-        // Close modal on overlay click
-        document.getElementById('jiraModal').addEventListener('click', (e) => {
-            if (e.target.classList.contains('jira-modal-overlay')) {
-                closeJiraModal();
-            }
+        document.getElementById('jiraModal').addEventListener('click', function(e) {
+            if (e.target.classList.contains('jira-modal-overlay')) closeJiraModal();
         });
         {{end}}
+
+        // ─── Initialization ──────────────────────────────────────────────
+        initBadgesFromCache();
+        switchTab(CONFIG.initialTab, true);
     </script>
 </body>
 </html>

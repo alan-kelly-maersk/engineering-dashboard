@@ -53,7 +53,8 @@ func NewHandler(ghClient *github.Client, sqClient *sonarqube.Client, jiraClient 
 	}, nil
 }
 
-// Dashboard serves the main dashboard page with both security and dependency info
+// Dashboard serves the main dashboard page shell; tab content is loaded
+// client-side via the JSON API endpoints and cached in localStorage.
 func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	tab := r.URL.Query().Get("tab")
 	if tab == "" {
@@ -62,13 +63,9 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		ActiveTab        string
-		Security         models.DashboardMetrics
-		Dependencies     models.DependencyMetrics
-		CodeQuality      models.CodeQualityMetrics
 		SonarQubeEnabled bool
 		SonarQubeBaseURL string
 		JiraEnabled      bool
-		JiraBaseURL      string
 		AuthEnabled      bool
 		UserName         string
 		UserEmail        string
@@ -79,7 +76,6 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		AuthEnabled:      h.authEnabled,
 	}
 
-	// Populate user info from auth context
 	if user := auth.GetUserFromContext(r); user != nil {
 		data.UserName = user.Name
 		data.UserEmail = user.Email
@@ -87,23 +83,6 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 
 	if data.SonarQubeEnabled {
 		data.SonarQubeBaseURL = h.sqClient.GetBaseURL()
-	}
-
-	if data.JiraEnabled {
-		data.JiraBaseURL = h.jiraClient.GetBaseURL()
-	}
-
-	// Always fetch security metrics for the overview
-	data.Security = h.ghClient.GetDashboardMetrics(h.config.Repositories)
-
-	// Fetch dependencies if on that tab
-	if tab == "dependencies" {
-		data.Dependencies = h.GetDependencyMetrics()
-	}
-
-	// Fetch code quality if on that tab and SonarQube is configured
-	if tab == "codequality" && data.SonarQubeEnabled {
-		data.CodeQuality = h.GetCodeQualityMetrics()
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "dashboard.html", data); err != nil {
