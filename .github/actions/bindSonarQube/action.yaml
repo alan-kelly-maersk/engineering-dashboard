@@ -1,0 +1,132 @@
+---
+name: "Bind SonarQube"
+description: "the SonarQube project is bound to the GitHub repository (i.e. integration with GitHub)"
+author: "Maersk-Global/devprodeng-mtts"
+branding:
+  icon: "code"
+  color: "blue"
+
+inputs:
+  host:
+    description: SonarQube server URL
+    required: true
+  token:
+    description: Authentication token of a SonarQube user
+    required: true
+  projectKey:
+    description: |
+      The project's unique key. Allowed characters are: letters, numbers, -, _, . and :, with at least one non-digit.
+      Default is combination of [ <repo name>_[ <branch name> OR <PR number> ] ] with hyphens '-' instead of slashes '/'.
+    required: false
+  projectName:
+    description: |
+      Name of the project that will be displayed on the web interface.
+      Default is combination of [ <repo name>_[ <branch name> OR <PR number> ] ] with hyphens '-' instead of slashes '/'.
+    required: false
+  monorepo:
+    description: |
+      Enable monorepo support. Set only if binding is true and if GitHub repository is a monorepo.
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Bind SonarQube project with GitHub repository
+      id: bind
+      shell: bash
+      run: |
+        # Check if the host does not end with a / . This is required because the SonarQube API does not accept URLs double // on api/projects/search
+        if [[ "${{ inputs.host }}" != */ ]]; then
+          HOST="${{ inputs.host }}/"
+        else
+          HOST="${{ inputs.host }}"
+        fi
+
+        # verify input monorepo
+        if [[ "${{ inputs.monorepo }}" != "true" && "${{ inputs.monorepo }}" != "false" ]]; then
+          echo FATAL: monorepo must either be true or false, but is ${{ inputs.monorepo }}.
+          exit 1
+        fi
+
+        # if not defined set the project name to the repository name
+        if [[ -z "${{ inputs.projectName }}" ]]; then
+          PROJECT_NAME="$(echo "${GITHUB_REPOSITORY}" | awk -F / '{print $2}')"
+        else
+          PROJECT_NAME="${{ inputs.projectName }}"
+        fi
+        # replace / with - in project name
+        SONAR_PROJECTNAME="$(echo "${PROJECT_NAME}" | sed "s/\//-/g")"
+        echo "SONAR_PROJECTNAME=${SONAR_PROJECTNAME}" | tee -a "$GITHUB_OUTPUT"
+
+        # if not defined set the project key to the project name
+        if [[ -z "${{ inputs.projectKey }}" ]]; then
+          SONAR_PROJECTKEY="${SONAR_PROJECTNAME}"
+        else
+          SONAR_PROJECTKEY="${{ inputs.projectKey }}"
+        fi
+        echo "SONAR_PROJECTKEY=${SONAR_PROJECTKEY}"| tee -a "$GITHUB_OUTPUT"
+
+        # if SonarQube project exists and does not have a binding yet, then bind it!
+        CURL_OPTIONS=( -w "%{http_code}" -sL -H "Authorization: Bearer ${{ inputs.token }}"  -o response.json )
+
+        # check if project exists
+        url="${HOST}api/projects/search?projects=${SONAR_PROJECTKEY}"
+        http_code="$(curl "${CURL_OPTIONS[@]}" $url)"
+        if [ "$http_code" -eq "200" ]; then
+          # curl successful. Get the total number of projects
+          number=$(jq .paging.total response.json)
+          if [ "$number" -eq "0" ]; then
+            # project does not exist. Create it!
+            CURL_DATA=( -d "name=${SONAR_PROJECTNAME}" \
+              -d "project=${SONAR_PROJECTKEY}" )
+            url="${HOST}api/projects/create"
+            http_code="$(curl -X POST "${CURL_OPTIONS[@]}" "${CURL_DATA[@]}" $url)"
+            if [ "$http_code" -eq "200" ]; then
+              number=1
+            else
+              echo "BIND_RESULT=ERROR: Failed to create the project. http_code=$http_code" | tee -a "$GITHUB_OUTPUT"
+              cat response.json
+            fi
+          fi
+          if [ "$number" -eq "1" ]; then
+            # project exists. Check if it has a binding
+            url="${HOST}api/alm_settings/get_binding?project=${SONAR_PROJECTKEY}"
+            http_code="$(curl "${CURL_OPTIONS[@]}" $url)"
+            if [ "$http_code" -eq "404" ]; then
+              # project does not have a binding, thus bind it!
+              CURL_DATA=( -d "almSetting=Prod-Sonarqube" -d "monorepo=${{ inputs.monorepo }}" \
+                -d "project=${SONAR_PROJECTKEY}" -d "repository=${GITHUB_REPOSITORY}" \
+                -d "summaryCommentEnabled=true" )
+              url="${HOST}api/alm_settings/set_github_binding"
+              http_code="$(curl -X POST "${CURL_OPTIONS[@]}" "${CURL_DATA[@]}" $url)"
+              if [ "$http_code" -eq "204" ]; then
+                echo "BIND_RESULT=INFO: Project bound successfully" | tee -a "$GITHUB_OUTPUT"
+              else
+                echo "BIND_RESULT=ERROR: Failed to bind the project. http_code=$http_code" | tee -a "$GITHUB_OUTPUT"
+                cat response.json
+              fi
+            elif [ "$http_code" -eq "200" ]; then
+              echo "BIND_RESULT=INFO: Project already has a binding" | tee -a "$GITHUB_OUTPUT"
+            else
+              echo "BIND_RESULT=ERROR: Failed to check binding. http_code=$http_code" | tee -a "$GITHUB_OUTPUT"
+              cat response.json
+            fi
+          else
+            echo "BIND_RESULT=ERROR: Project does not exist. http_code=$http_code" | tee -a "$GITHUB_OUTPUT"
+          fi
+        else
+          echo "BIND_RESULT=ERROR: Sonar API call failed. http_code=$http_code" | tee -a "$GITHUB_OUTPUT"
+          cat response.json
+        fi
+
+outputs:
+  projectKey:
+    description: Unique identifier of the SonarQube project
+    value: ${{ steps.bind.outputs.SONAR_PROJECTKEY }}
+  projectName:
+    description: Name of the SonarQube project
+    value: ${{ steps.bind.outputs.SONAR_PROJECTNAME }}
+  bindResult:
+    description: Result of the bind action
+    value: ${{ steps.bind.outputs.BIND_RESULT }}
