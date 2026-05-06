@@ -121,7 +121,7 @@ runs:
     - name: Bind SonarQube project with GitHub repository
       if: ${{ inputs.binding == 'true' }}
       id: bind
-      uses: ./github/actions/bindSonarQube@main
+      uses: ./.github/actions/bindSonarQube@main
       with:
         host: ${{ inputs.host }}
         token: ${{ inputs.login }}
