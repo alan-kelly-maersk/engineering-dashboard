@@ -246,7 +246,7 @@ jobs:
         run: |
           terraform plan \
             -var-file=environments/integration.tfvars \
-            -var="container_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-build-push.outputs.image-tag }}" \
+            -var="container_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" \
             -var="github_token=${{ env.PAT_FOR_GITHUB }}" \
             -var="sonarqube_token=${{ env.SONARQUBE_TOKEN }}" \
             -var="sonarqube_url=${{ env.SONARQUBE_URL }}" \
@@ -353,7 +353,7 @@ jobs:
         run: |
           terraform plan \
             -var-file=environments/production.tfvars \
-            -var="container_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-build-push.outputs.image-tag }}" \
+            -var="container_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" \
             -var="github_token=${{ env.PAT_FOR_GITHUB }}" \
             -var="sonarqube_token=${{ env.SONARQUBE_TOKEN }}" \
             -var="sonarqube_url=${{ env.SONARQUBE_URL }}" \
