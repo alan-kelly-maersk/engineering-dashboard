@@ -27,6 +27,7 @@ func main() {
 	if serverPort == "" {
 		serverPort = os.Getenv("PORT")
 	}
+	// override with default
 	if serverPort == "" {
 		serverPort = "8080"
 	}
