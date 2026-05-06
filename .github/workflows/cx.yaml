@@ -18,23 +18,7 @@ env:
   GO_VERSION: "1.25"
   TF_VERSION: "1.14.5"
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  Pipeline stages:
-#
-#  1. build-and-test ─┬─> 2a. security-scan     ─┐
-#                     ├─> 2b. code-quality      ─┤
-#                     └─> 2c. terraform-validate─┤
-#                                                ├─> 3. docker-build-push
-#                                                │       ↓
-#                                                │   4. deploy-integration  (Terraform → App Service)
-#                                                │       ↓
-#                                                │   5. smoke-test-integration
-#                                                │       ↓
-#                                                └── 6. deploy-production   (Terraform → App Service)
-# ══════════════════════════════════════════════════════════════════════════════
-
 jobs:
-
   # ──────────────────────────────────────────────
   #  Stage 1 ▸ Build & Unit Test
   # ──────────────────────────────────────────────
@@ -118,23 +102,23 @@ jobs:
         with:
           name: coverage-report
 
-      # - name: Run SonarQube scan
-      #   uses: ./.github/actions/SonarQube
-      #   env:
-      #     MDN_SONARQUBE_TOKEN: ${{ secrets.MDN_SONARQUBE_TOKEN }}
-      #   with:
-      #     host: ${{ vars.SONARQUBE_URL }}
-      #     login: ${{ env.MDN_SONARQUBE_TOKEN }}
-      #     projectKey: "engineering-dashboard"
-      #     projectName: "Engineering Dashboard"
-      #     projectBaseDir: "."
-      #     projectVersion: "0.0.1"
-      #     binding: true
-      #     extra_sonar_args: |
-      #       -Dsonar.qualitygate.wait=true \
-      #       -Dsonar.go.coverage.reportPaths=coverage.out \
-      #       -Dsonar.exclusions=**/*_test.go \
-      #       -Dsonar.test.inclusions=**/*_test.go
+      - name: Run SonarQube scan
+        uses: ./.github/actions/SonarQube
+        env:
+          MDN_SONARQUBE_TOKEN: ${{ secrets.MDN_SONARQUBE_TOKEN }}
+        with:
+          host: "https://sonar.maerskdev.net"
+          login: ${{ env.MDN_SONARQUBE_TOKEN }}
+          projectKey: "engineering-dashboard"
+          projectName: "Engineering Dashboard"
+          projectBaseDir: "."
+          projectVersion: "0.0.1"
+          binding: true
+          extra_sonar_args: |
+            -Dsonar.qualitygate.wait=true \
+            -Dsonar.go.coverage.reportPaths=coverage.out \
+            -Dsonar.exclusions=**/*_test.go \
+            -Dsonar.test.inclusions=**/*_test.go
 
   # ──────────────────────────────────────────────
   #  Stage 2c ▸ Terraform Validate
@@ -300,7 +284,7 @@ jobs:
           MAX_RETRIES=10
           RETRY_INTERVAL=15
           for i in $(seq 1 $MAX_RETRIES); do
-            if curl -sf "https://l7se-do-int-app.azurewebsites.net//health"; then
+            if curl -sf "https://l7se-do-int-app.azurewebsites.net/health"; then
               echo "Health check passed on attempt $i"
               exit 0
             fi
